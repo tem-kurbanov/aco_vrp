@@ -10,11 +10,17 @@
 #include <algorithm>
 #include <omp.h>
 
-VRPAntColony::VRPAntColony(Graph original_graph, int num_goals) {
+VRPAntColony::VRPAntColony(Graph original_graph, int num_goals, int ants, int iterations,
+                           int threads, int battery, int cover_k) {
     this->graph = std::move(original_graph);
     this->depot = 0;
     this->num_criticals = num_goals + 1;
     this->energy_to_depot = *new vector<vector<int>>(num_criticals);
+    this->num_ants = ants;
+    this->iteration_limit = iterations;
+    this->thread_count = threads;
+    this->battery_capacity = battery;
+    this->k_cover = cover_k;
 }
 
 
@@ -496,13 +502,13 @@ vector<int> VRPAntColony::link_paths(vector<int>& current_timecons, vector<int>&
 
 ShrinkGraph VRPAntColony::shrink_graph() {
     if (cover_edge_params.empty())
-        k_path_cover(K);
+        k_path_cover(k_cover);
 
 
     vector<deque<int>> shrink_edge_nodes;
     vector<vector<int>> shrink_edge_params;
 
-#pragma omp parallel for num_threads(5)
+#pragma omp parallel for num_threads(thread_count)
     for (int s = 0; s < num_criticals; ++s) {
         map<int, vector<Label*>> paths = t_kpc_mls(s);
 
@@ -558,9 +564,6 @@ ShrinkGraph VRPAntColony::shrink_graph() {
 // Main solution function for VRP
 string VRPAntColony::bicriterion_ant_vrp() {
     // hyperparameters
-    int num_ants = 100;
-    int iteration_limit = 20;
-
     double evaporation_rate = 0.05;
     double exploration_probability = 0.1;
     double alpha = 1;
@@ -626,7 +629,7 @@ string VRPAntColony::bicriterion_ant_vrp() {
         deque<pair<deque<int>, vector<int>>> iteration_solutions;
         auto tt1 = chrono::high_resolution_clock::now();
 
-#pragma omp parallel for num_threads(5)
+#pragma omp parallel for num_threads(thread_count)
         for (int h = 0; h <= num_ants; ++h) {
             double lambda1 = (double)h / num_ants;
             double lambda2 = 1 - lambda1;
@@ -1280,6 +1283,4 @@ int VRPAntColony::add_energy(int& current_energy, int& added_energy) {
 //    }
 //    file.close();
 //}
-
-
 

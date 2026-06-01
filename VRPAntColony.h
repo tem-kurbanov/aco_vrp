@@ -35,7 +35,10 @@ private:
     vector<pair<int, int>> shrinked_edge_nodes;
     vector<vector<int>> shrinked_edge_parameters;
 
-    const int K = 24;
+    int k_cover = 24;
+    int num_ants = 100;
+    int iteration_limit = 20;
+    int thread_count = 5;
 
     //kPC cover variables;
     int num_cover_nodes = 0;
@@ -96,7 +99,8 @@ private:
 
 public:
 
-    VRPAntColony(Graph original_graph, int num_goals);
+    VRPAntColony(Graph original_graph, int num_goals, int ants = 100, int iterations = 20,
+                 int threads = 5, int battery = 50000, int cover_k = 24);
 
     string bicriterion_ant_vrp();
 

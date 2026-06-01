@@ -10,10 +10,16 @@
 #include <omp.h>
 #include <unordered_map>
 
-SVRPAntColony::SVRPAntColony(Graph original_graph, int num_goals) {
+SVRPAntColony::SVRPAntColony(Graph original_graph, int num_goals, int ants, int iterations,
+                             int threads, int battery, int cover_k) {
     this->graph = std::move(original_graph);
     this->num_criticals = num_goals + 1;
     this->energy_to_depot = *new vector<vector<int>>(num_goals);
+    this->num_ants = ants;
+    this->iteration_limit = iterations;
+    this->thread_count = threads;
+    this->battery_capacity = battery;
+    this->k_cover = cover_k;
 }
 
 void SVRPAntColony::k_path_cover(int k) {
@@ -487,13 +493,13 @@ vector<int> SVRPAntColony::link_soc_paths(vector<int>& current_soc, vector<int>&
 ShrinkGraph SVRPAntColony::shrink_graph() {
 
     if (cover_edge_params.empty())
-        k_path_cover(K);
+        k_path_cover(k_cover);
 
 
     vector<deque<int>> shrink_edge_nodes;
     vector<vector<int>> shrink_edge_params;
 
-#pragma omp parallel for num_threads(5)
+#pragma omp parallel for num_threads(thread_count)
     for (int s = 0; s < num_criticals; ++s) {
         map<int, vector<Label*>> paths = t_kpc_mls(s, false);
 
@@ -556,8 +562,7 @@ ShrinkGraph SVRPAntColony::shrink_graph() {
 string SVRPAntColony::multicolony_ant_svrp() {
     // hyperparameters
     int num_colonies = 5;
-    int num_ants_per_colony = 20;
-    int iteration_limit = 20;
+    int num_ants_per_colony = num_ants;
 
     double evaporation_rate = 0.05;
     double exploration_probability = 0.05;
@@ -629,7 +634,7 @@ string SVRPAntColony::multicolony_ant_svrp() {
 
         deque<pair<int, pair<deque<int>, vector<int>>>> iteration_solutions;
 
-#pragma omp parallel for num_threads(5)
+#pragma omp parallel for num_threads(thread_count)
         for (int c = 0; c < num_colonies; ++c) {
             double interval_base = (double)c / (num_colonies + 1);
             double increment = (double)2 / (num_colonies + 1) / (num_ants_per_colony);
@@ -792,9 +797,6 @@ string SVRPAntColony::multicolony_ant_svrp() {
 // Main solution function for kPC-STSP
 string SVRPAntColony::bicriterion_ant_svrp() {
     // hyperparameters
-    int num_ants = 100;
-    int iteration_limit = 20;
-
     double evaporation_rate = 0.05;
     double exploration_probability = 0.1;
     double alpha = 1;
@@ -863,7 +865,7 @@ string SVRPAntColony::bicriterion_ant_svrp() {
         deque<pair<deque<int>, vector<int>>> iteration_solutions;
         auto tt1 = chrono::high_resolution_clock::now();
 
-#pragma omp parallel for num_threads(5)
+#pragma omp parallel for num_threads(thread_count)
         for (int h = 0; h <= num_ants; ++h) {
 //            cout << omp_get_thread_num() << endl;
 
