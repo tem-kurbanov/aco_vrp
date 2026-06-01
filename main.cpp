@@ -283,7 +283,7 @@ void print_usage(const char* program_name) {
     cerr << "  " << program_name << " <num_goals> <graph_csv> [options]\n\n";
     cerr << "Options:\n";
     cerr << "  --tests <n>           Number of random scenarios. Default: 10\n";
-    cerr << "  --seed <n>            Seed for depot/goal sampling. Default: random_device\n";
+    cerr << "  --seed <n>            Seed for depot/goal sampling and VRP ACO. Default: random_device\n";
     cerr << "  --depot <id>          Fixed depot id. Default: random per test\n";
     cerr << "  --goal-ids <ids>      Fixed comma/space-separated goal ids\n";
     cerr << "  --goals-file <path>   File with comma/space-separated goal ids\n";
@@ -443,6 +443,7 @@ int main(int argc, char *argv[]) {
         if (goals.empty()) {
             goals = choose_random_goals(rng, num_nodes, options.num_goals, depot);
         }
+        unsigned int solver_seed = rng();
 
         Graph graph(num_nodes, input_graph.edge_points, input_graph.edge_parameters, depot, goals);
 
@@ -450,12 +451,12 @@ int main(int argc, char *argv[]) {
         string vrp_answer;
         if (options.solver == SolverMode::Both || options.solver == SolverMode::Svrp) {
             SVRPAntColony sant(graph, (int)goals.size(), options.ants, options.iterations,
-                               options.threads, options.battery, options.k_cover);
+                               options.threads, options.battery, options.k_cover, solver_seed);
             svrp_answer = sant.bicriterion_ant_svrp();
         }
         if (options.solver == SolverMode::Both || options.solver == SolverMode::Vrp) {
             VRPAntColony ant(graph, (int)goals.size(), options.ants, options.iterations,
-                             options.threads, options.battery, options.k_cover);
+                             options.threads, options.battery, options.k_cover, solver_seed);
             vrp_answer = ant.bicriterion_ant_vrp();
         }
 

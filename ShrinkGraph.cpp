@@ -16,8 +16,8 @@ ShrinkGraph::ShrinkGraph() {
 
 ShrinkGraph::ShrinkGraph(int num_nodes, vector<deque<int>> shrink_edge_nodes, vector<vector<int>> shrink_edge_params) {
     this->num_nodes = num_nodes;
-    edge_nodes = move(shrink_edge_nodes);
-    edge_parameters = move(shrink_edge_params);
+    edge_nodes = std::move(shrink_edge_nodes);
+    edge_parameters = std::move(shrink_edge_params);
     num_edges = (int)edge_nodes.size();
 
     for (int e = 0; e < num_edges; ++e) {

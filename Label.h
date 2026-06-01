@@ -3,22 +3,27 @@
 #ifndef ACO_VRP_LABEL_H
 #define ACO_VRP_LABEL_H
 
+#include <memory>
+#include <utility>
 #include <vector>
 
 using namespace std;
 
+struct Label;
+using LabelPtr = shared_ptr<Label>;
+
 struct Label{
     int node;
     vector<int> parameters;
-    Label *parent;
+    LabelPtr parent;
     int used_edge;
 
-    Label(int n, vector<int> params, Label *p, int edge) : node(n), parameters(move(params)), parent(p), used_edge(edge) {}
+    Label(int n, vector<int> params, LabelPtr p, int edge) : node(n), parameters(std::move(params)), parent(std::move(p)), used_edge(edge) {}
 
 };
 
 struct lex_compare{
-    bool operator() (Label* lhs, Label* rhs) const {
+    bool operator() (const LabelPtr& lhs, const LabelPtr& rhs) const {
         for (int i = 0; i < (int)lhs->parameters.size(); ++i) {
             if (lhs->parameters[i] < rhs->parameters[i])
                 return true;
@@ -31,7 +36,7 @@ struct lex_compare{
 };
 
 struct soc_lex_compare{
-    bool operator() (Label* lhs, Label* rhs) const {
+    bool operator() (const LabelPtr& lhs, const LabelPtr& rhs) const {
         for (int i = 0; i < (int)lhs->parameters.size() - 1; ++i) {
             if (lhs->parameters[i] < rhs->parameters[i])
                 return true;
