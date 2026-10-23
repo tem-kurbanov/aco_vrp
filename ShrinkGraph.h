@@ -8,13 +8,14 @@ using namespace std;
 #define ACO_VRP_SHRINKGRAPH_H
 
 
+// Planning multigraph: parallel arcs retain different nondominated road paths.
 class ShrinkGraph {
 private:
     int num_nodes;
     int num_edges;
     int num_parameters = 2;
 
-    vector<deque<int>> edge_nodes;
+    vector<deque<int>> edge_nodes; // Full road paths; front/back are planning endpoints.
     vector<vector<int>> edge_parameters;
 
     map<int, vector<int>> outgoing_edges;

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "origin": "Author-supplied sole surviving cluster experiment source",
+  "historical_git_revision": null,
+  "solver_source_sha256": {
+    "ExperimentIO.cpp": "8d1a5040e553bb91191ab47abdd4e115b1d41004ec49f9cb4d532bf9561a271a",
+    "ExperimentIO.h": "24ab35e2aa1483d926d866bbd515e0cd948f833ba4e6c1cad5821aee33889452",
+    "Graph.cpp": "59870bf635839afc735e65272701521a948c958382926faa1a011806c4be35a6",
+    "Graph.h": "dcc880697d681e7af7fe60aafe4c633ef7c43a093039e471e43e978a427ee397",
+    "Label.h": "58b8a30c8ca463970633f16e16559ac22595768f16b00e414837d04df72d9a0b",
+    "SVRPAntColony.cpp": "cb423ca0cef7aca2f241434b8266943cf77fc086d3ce1ff592a8771a779c1e01",
+    "SVRPAntColony.h": "71f1cde03d8e7bd6d4d6a7fbd94706eecb55a1160379a2879d0d647cc9bc7302",
+    "ShrinkGraph.cpp": "935355f9a818c74b44872c8b3cbc02e6b6c3ba7142cf32386a2fea00efabc082",
+    "ShrinkGraph.h": "ba9e1ee5e190bcaf11cc5154ba088248be75ea1ee6e7deaa931455248fb29de5",
+    "SolverResult.h": "a91210a16282979765128c214d7aa2124c5bb6a6cc837a8d744b0a2532864cf0",
+    "VRPAntColony.cpp": "9d9aa6c956de644454a9515d96c6086d8ace777a0680a9750678f84f77fba6a4",
+    "VRPAntColony.h": "c5363fcc523f9ac55bd3cdc944ebc5ab3b4652af0e154d6829e879196569dd19",
+    "main.cpp": "32b93a97a7659fa27056b822ac45a3fedd25d0f3df3d773a131e2bf8fc1f06e1"
+  }
+}

@@ -1,0 +1,911 @@
+{
+  "schema_version": 1,
+  "generator": {
+    "repository": "https://github.com/tem-kurbanov/art_city",
+    "compatible_revision": "d9d9a225b5d3c82bcaf36ba7b4a2a8a54ede4d87",
+    "source_sha256": "1d956a58edb492a85ad9b5d5dd8d1ce281845f497397c17ef6365b7a238cdfd0",
+    "historical_revision": null
+  },
+  "instances": [
+    {
+      "path": "c100/graph_000_n100_c1_u0_seed99181.csv",
+      "nodes": 100,
+      "edges": 280,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 99181,
+      "sha256": "cb6158e720ae9a7219d508f87c6d48bd4135f684e94c9f70e3dfaeb6a19362c9",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c100/graph_001_n100_c1_u0_seed99182.csv",
+      "nodes": 100,
+      "edges": 276,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 99182,
+      "sha256": "2e7dea6141c3518fdafa0d93581595e925eb3946155b7e8df5e277bf0d84f984",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c100/graph_002_n100_c1_u0_seed99183.csv",
+      "nodes": 100,
+      "edges": 280,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 99183,
+      "sha256": "7bc49bebe9d2915552439b426ca08d4f871d6ca273b95df4848c739a9ae45ca4",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c100/graph_003_n100_c1_u0_seed99184.csv",
+      "nodes": 100,
+      "edges": 278,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 99184,
+      "sha256": "0b3fdf089dcb269faecba42ed507ddc0a8281e3113aef6e461e5e19f2906db36",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c100/graph_004_n100_c1_u0_seed99185.csv",
+      "nodes": 100,
+      "edges": 284,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 99185,
+      "sha256": "cc5006ee6cd9e95bf24bb370566d04626cde6d4ffe40da180906bd9aec22d8bb",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c100/graph_005_n100_c1_u0_seed99186.csv",
+      "nodes": 100,
+      "edges": 286,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 99186,
+      "sha256": "cb532ef8ec8fcd655790b265669cc7025c1d92897492617a85ef185e8ccd8a44",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c100/graph_006_n100_c1_u0_seed99187.csv",
+      "nodes": 100,
+      "edges": 284,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 99187,
+      "sha256": "568192d884cf0d8aec9c2cb8050d1acb3bc6ef2cf4834d9be987c738da0ed809",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c100/graph_007_n100_c1_u0_seed99188.csv",
+      "nodes": 100,
+      "edges": 280,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 99188,
+      "sha256": "e57a1824b7d02e713cf754338fae25a806520da0c41eef2b4fefae0bb4822e88",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c100/graph_008_n100_c1_u0_seed99189.csv",
+      "nodes": 100,
+      "edges": 286,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 99189,
+      "sha256": "ebcee2ea4ccb1ded4543b753825d9a9dd3bb91c7b8e45ba9db63b656fe882d19",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c100/graph_009_n100_c1_u0_seed99190.csv",
+      "nodes": 100,
+      "edges": 288,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 99190,
+      "sha256": "1e87a003111071d75c001b7dd72ae66b173488696f8c4611658072496aecf91e",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c250/graph_000_n250_c1_u0_seed23172.csv",
+      "nodes": 250,
+      "edges": 726,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 23172,
+      "sha256": "d162d1f6089a13c920941846bfbb18ac884fae9f56cafec00f6a5e8d7fed3233",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c250/graph_001_n250_c1_u0_seed23173.csv",
+      "nodes": 250,
+      "edges": 732,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 23173,
+      "sha256": "41e08842a19d51c8aa7ada636162340629d3dbfa228309d660a33cc9c3259b55",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c250/graph_002_n250_c1_u0_seed23174.csv",
+      "nodes": 250,
+      "edges": 730,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 23174,
+      "sha256": "8d39fa22631a4592649b3ee0360965419aa62a961ca9ae329a935d6fb5c6b83d",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c250/graph_003_n250_c1_u0_seed23175.csv",
+      "nodes": 250,
+      "edges": 728,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 23175,
+      "sha256": "00c9408bb49153a49f0461b9f64521ce1cdd5a475448449479c81e54dfc576b6",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c250/graph_004_n250_c1_u0_seed23176.csv",
+      "nodes": 250,
+      "edges": 730,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 23176,
+      "sha256": "0496bab6bc2ee35207192385a800cf971cfbfdd086223c9092a54e514f009f5e",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c250/graph_005_n250_c1_u0_seed23177.csv",
+      "nodes": 250,
+      "edges": 716,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 23177,
+      "sha256": "1e522a814959f5aa736bef18daf445da040e969c6ece4bd827717d0033e1233b",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c250/graph_006_n250_c1_u0_seed23178.csv",
+      "nodes": 250,
+      "edges": 726,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 23178,
+      "sha256": "60f40fa3b2c56927e69803eb726a644235bc218c205d431f0c65e1f755eed777",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c250/graph_007_n250_c1_u0_seed23179.csv",
+      "nodes": 250,
+      "edges": 740,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 23179,
+      "sha256": "de25fd13c47c13f015ca2c7f696cbd5e3ad0b53fbd016ad12b46a10c9d7e873e",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c250/graph_008_n250_c1_u0_seed23180.csv",
+      "nodes": 250,
+      "edges": 738,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 23180,
+      "sha256": "1dd136f0f13df9934ff3d5f0d84b00fe6ef527e030f4187750e1acb29dabe1b5",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c250/graph_009_n250_c1_u0_seed23181.csv",
+      "nodes": 250,
+      "edges": 732,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 23181,
+      "sha256": "764a478f3f59bdb3ff6de6d4f0166cf5032f7058d11d9ad1554d8462cb19d8a0",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c500/graph_000_n500_c1_u0_seed12961.csv",
+      "nodes": 500,
+      "edges": 1486,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 12961,
+      "sha256": "866e3d7e02959ea38140d47d79d9182262b7eba785f0419b4a9e6babb9b2a548",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c500/graph_001_n500_c1_u0_seed12962.csv",
+      "nodes": 500,
+      "edges": 1478,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 12962,
+      "sha256": "e01858d740d056a09a4d3bf6a11aa2b215e1ed1eb615ebf4b5b56ff237ef5c44",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c500/graph_002_n500_c1_u0_seed12963.csv",
+      "nodes": 500,
+      "edges": 1488,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 12963,
+      "sha256": "cac599f73d902b87423abada3cc41c621fd64c62ad9ca674b33e85ab3a65ac2d",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c500/graph_003_n500_c1_u0_seed12964.csv",
+      "nodes": 500,
+      "edges": 1488,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 12964,
+      "sha256": "84f88045ced959a799f34c5e48432fc201a74c87fe906a02814a60ad72487c7f",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c500/graph_004_n500_c1_u0_seed12965.csv",
+      "nodes": 500,
+      "edges": 1472,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 12965,
+      "sha256": "f2e1364c78cc3b46de81e077a62aa33f6b5b3dc9b3c3f426058a7630b2349c66",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c500/graph_005_n500_c1_u0_seed12966.csv",
+      "nodes": 500,
+      "edges": 1488,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 12966,
+      "sha256": "005a5218c2a23885c8a09059b1e1dfc0859046e7b99bec97982d8b5654949983",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c500/graph_006_n500_c1_u0_seed12967.csv",
+      "nodes": 500,
+      "edges": 1498,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 12967,
+      "sha256": "26d7e89d54821f8431211e3c049aa1dee58155ef1d41e1106f7369cd0b3b271c",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c500/graph_007_n500_c1_u0_seed12968.csv",
+      "nodes": 500,
+      "edges": 1466,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 12968,
+      "sha256": "b4a803d7ed33d1795e5bd8d4da279787e67e8a5b7874852828b5f71581af2dea",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c500/graph_008_n500_c1_u0_seed12969.csv",
+      "nodes": 500,
+      "edges": 1482,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 12969,
+      "sha256": "b1dfd18f040e3a99a3ce9f9aadda3989fafc3bcfe7fd4e1c2f38d2c0f86d62d4",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "c500/graph_009_n500_c1_u0_seed12970.csv",
+      "nodes": 500,
+      "edges": 1466,
+      "correlated": 1,
+      "uncorrelated": 0,
+      "seed": 12970,
+      "sha256": "fd32b58b0b7be4275cda29f25ae2211703a79d5f27eeda370359833ca25485e8",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "c1"
+      ]
+    },
+    {
+      "path": "u100/graph_000_n100_c0_u1_seed20062.csv",
+      "nodes": 100,
+      "edges": 286,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 20062,
+      "sha256": "1a0642a416ed97c20e4d5ab5ee72343ef93d9ecf995c53d4956ff165e35fb5eb",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u100/graph_001_n100_c0_u1_seed20063.csv",
+      "nodes": 100,
+      "edges": 280,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 20063,
+      "sha256": "64cb41796187a258a689c06acb70281221c13b47f4974e62fe9ac14106f349ab",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u100/graph_002_n100_c0_u1_seed20064.csv",
+      "nodes": 100,
+      "edges": 278,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 20064,
+      "sha256": "b67738a71c36e7cc408b2c9883a6658164157997a1f4f78cc75f972d05cad27d",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u100/graph_003_n100_c0_u1_seed20065.csv",
+      "nodes": 100,
+      "edges": 272,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 20065,
+      "sha256": "9eb96090f7ae230a03ca4ee8038bf3961732f35214423295167b3147839fc1f9",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u100/graph_004_n100_c0_u1_seed20066.csv",
+      "nodes": 100,
+      "edges": 282,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 20066,
+      "sha256": "e24a2761003ed1e77adee25348f3628f95989d924cddd7b55576947df21a998e",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u100/graph_005_n100_c0_u1_seed20067.csv",
+      "nodes": 100,
+      "edges": 278,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 20067,
+      "sha256": "fdfa49c198f00f81bf0124b6ffab123fd1ac9a13ec89c3156574073630ce3027",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u100/graph_006_n100_c0_u1_seed20068.csv",
+      "nodes": 100,
+      "edges": 290,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 20068,
+      "sha256": "aab4b0c28f468a2980b8f148b66c4d04638f3674801ae7e184cf2f9155e9ceb7",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u100/graph_007_n100_c0_u1_seed20069.csv",
+      "nodes": 100,
+      "edges": 272,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 20069,
+      "sha256": "20bd77dd46935d7f605d2e1e532c4067525d460eabcd93a4c08c07f7caba3fe4",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u100/graph_008_n100_c0_u1_seed20070.csv",
+      "nodes": 100,
+      "edges": 284,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 20070,
+      "sha256": "78c34a001bc7e2386ea94cd1e03e7ca2dc14e90b86e2941f8a4f30452223a65f",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u100/graph_009_n100_c0_u1_seed20071.csv",
+      "nodes": 100,
+      "edges": 284,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 20071,
+      "sha256": "9a025d14e936c30ffd5267d9a781bc1a6626e147475906e7afe830c2426cbfc0",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u250/graph_000_n250_c0_u1_seed41339.csv",
+      "nodes": 250,
+      "edges": 726,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 41339,
+      "sha256": "dffcd0147abffc630ba30849e7e8d8dcfd28a86c9dca4193622663e92bf46007",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u250/graph_001_n250_c0_u1_seed41340.csv",
+      "nodes": 250,
+      "edges": 732,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 41340,
+      "sha256": "ccaf940177bfb12ccc3d6729ae049241cdb5b9ca1030ba084441909a76d1d145",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u250/graph_002_n250_c0_u1_seed41341.csv",
+      "nodes": 250,
+      "edges": 722,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 41341,
+      "sha256": "032c196018e02bd0e0f5973d356967640c31a389f0491b1453a50db2ac40b20b",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u250/graph_003_n250_c0_u1_seed41342.csv",
+      "nodes": 250,
+      "edges": 732,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 41342,
+      "sha256": "3467b021ae6b58072c0a417bcfbd357733418cdfa5e7a66747b4b54088e6fbfd",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u250/graph_004_n250_c0_u1_seed41343.csv",
+      "nodes": 250,
+      "edges": 726,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 41343,
+      "sha256": "ea6b8ad4222e6172acc69ff765817b34c376ff8bdd685bc5f1bba2ac90680830",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u250/graph_005_n250_c0_u1_seed41344.csv",
+      "nodes": 250,
+      "edges": 732,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 41344,
+      "sha256": "fc88f91cb40bd1655d211fe93ea9bfd373639e6afdecc69897440982af57f3b2",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u250/graph_006_n250_c0_u1_seed41345.csv",
+      "nodes": 250,
+      "edges": 728,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 41345,
+      "sha256": "4a7fdf781384266e235c609ae04d587d8b7627f16c73598eea3f323d7949deab",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u250/graph_007_n250_c0_u1_seed41346.csv",
+      "nodes": 250,
+      "edges": 718,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 41346,
+      "sha256": "e630b06ed774b1a7ac9d2a3505c12f377c5579af25dcb25620880fdd76d55223",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u250/graph_008_n250_c0_u1_seed41347.csv",
+      "nodes": 250,
+      "edges": 724,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 41347,
+      "sha256": "bec8cdca55da45b1858d61918da00d08eaf7c90c76a2b13cbc92c0309ab10658",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u250/graph_009_n250_c0_u1_seed41348.csv",
+      "nodes": 250,
+      "edges": 722,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 41348,
+      "sha256": "99c07de406b47e90ffbc4d593bbccaff20565ce1d9a6809d32bf269ac01b7728",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u500/graph_000_n500_c0_u1_seed85402.csv",
+      "nodes": 500,
+      "edges": 1492,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 85402,
+      "sha256": "ff7753316413f689c9e5e296a972c01965a81cf9a80b897f3e5725337eb00035",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u500/graph_001_n500_c0_u1_seed85403.csv",
+      "nodes": 500,
+      "edges": 1454,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 85403,
+      "sha256": "09236f053d6fab82d168e9942afd19d3376fe19e2ee52249289e434b7cc9a545",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u500/graph_002_n500_c0_u1_seed85404.csv",
+      "nodes": 500,
+      "edges": 1486,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 85404,
+      "sha256": "8c911d8cb5a62213359f7c54f10470c03ad042d715337eb1a3da292f1134c0b8",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u500/graph_003_n500_c0_u1_seed85405.csv",
+      "nodes": 500,
+      "edges": 1476,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 85405,
+      "sha256": "df0cb3977dbd13e9ca7508201bf8c894af7b76a5f5c31f21fc75eb3d5a3d76c5",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u500/graph_004_n500_c0_u1_seed85406.csv",
+      "nodes": 500,
+      "edges": 1492,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 85406,
+      "sha256": "8bd692a957ba637d4149a0d923bcbe3b5c2db79e5c7ad9acbbefbd255ab91fbb",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u500/graph_005_n500_c0_u1_seed85407.csv",
+      "nodes": 500,
+      "edges": 1500,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 85407,
+      "sha256": "9b00977d86686c68c199f4ecb4c50abca0ea401895748e632baec26c612323aa",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u500/graph_006_n500_c0_u1_seed85408.csv",
+      "nodes": 500,
+      "edges": 1486,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 85408,
+      "sha256": "42c3b7aa86abe75c90be37eedb592aefc7d69d0e5b1d157603f13d2aaa08de93",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u500/graph_007_n500_c0_u1_seed85409.csv",
+      "nodes": 500,
+      "edges": 1494,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 85409,
+      "sha256": "3d18b8201f53262b6c05021f37666e7941adf71a86c723c49cf7b3c923f19157",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u500/graph_008_n500_c0_u1_seed85410.csv",
+      "nodes": 500,
+      "edges": 1484,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 85410,
+      "sha256": "3525a74b71552a1e0c35ab8c3752bb07450c40cddeb5df292b47b94f1d35c61f",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    },
+    {
+      "path": "u500/graph_009_n500_c0_u1_seed85411.csv",
+      "nodes": 500,
+      "edges": 1490,
+      "correlated": 0,
+      "uncorrelated": 1,
+      "seed": 85411,
+      "sha256": "f64ea035cf6ea97f216a9bb0fe819f2924862ed8fc7ebdd95ae348ab588b2e26",
+      "header": [
+        "fromId",
+        "toId",
+        "d",
+        "u1"
+      ]
+    }
+  ]
+}

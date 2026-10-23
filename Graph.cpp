@@ -13,13 +13,16 @@ Graph::Graph(int nnodes, vector<pair<int, int>> epoints, const vector<pair<int, 
     num_edges = epoints.size();
 
     restructure_ids.assign(num_nodes, -1);
+    original_ids.assign(num_nodes, -1);
     id_to_goal.assign(goals.size() + 1, -1);
     restructure_ids[depot] = 0;
+    original_ids[0] = depot;
     id_to_goal[0] = depot;
     int counter = 1;
     for (int i = 0; i < num_nodes; ++i) {
         if (goals.find(i) != goals.end()) {
             restructure_ids[i] = counter;
+            original_ids[counter] = i;
             id_to_goal[counter] = i;
             counter++;
         }
@@ -27,6 +30,7 @@ Graph::Graph(int nnodes, vector<pair<int, int>> epoints, const vector<pair<int, 
     for (int i = 0; i < num_nodes; ++i) {
         if (restructure_ids[i] == -1) {
             restructure_ids[i] = counter;
+            original_ids[counter] = i;
             counter++;
         }
     }
@@ -130,6 +134,13 @@ void Graph::augment_graph(set<int>& goals) {
 
 int Graph::get_restructure_id(int node) {
         return restructure_ids[node];
+}
+
+int Graph::get_original_id(int internal_id) {
+    if (internal_id >= 0 && internal_id < num_nodes) {
+        return original_ids[internal_id];
+    }
+    return -1;
 }
 
 

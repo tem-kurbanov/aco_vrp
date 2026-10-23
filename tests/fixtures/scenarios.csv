@@ -1,0 +1,3 @@
+scenario_id,depot,goals,scenario_seed
+fixture-1,0,1|2,12345
+fixture-2,3,4|5,12346

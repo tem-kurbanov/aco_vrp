@@ -1,3 +1,15 @@
 /build
-/art
 /.cache
+/.venv
+/.slurm_tmp
+/cluster_code
+/outputs
+/logs
+/errors
+/analysis
+/Scalable_Multicriteria_Vehicle_Routing_on_Compressed_Graphs__Exact_and_Ant_Colony_Optimization_Methods/
+/SVRPAntColony_analysis.md
+/*.zip
+__pycache__/
+*.py[cod]
+.DS_Store

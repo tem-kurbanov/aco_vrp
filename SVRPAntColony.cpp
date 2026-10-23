@@ -12,34 +12,34 @@
 #include <unordered_map>
 
 SVRPAntColony::SVRPAntColony(Graph original_graph, int num_goals, int ants, int iterations,
-                             int threads, int battery, int cover_k, unsigned int seed) {
+                             int threads, int battery, int cover_k, unsigned int seed, bool compare_planned,
+                             bool count_pass_through, int pass_through_candidates, int vehicles) {
     this->graph = std::move(original_graph);
     this->num_criticals = num_goals + 1;
     this->num_ants = ants;
     this->iteration_limit = iterations;
     this->thread_count = threads;
+    this->max_vehicles = vehicles > 0 ? vehicles : num_goals;
     this->battery_capacity = battery;
     this->k_cover = cover_k;
     this->rng_seed = seed;
+    this->compare_direct_with_planned = compare_planned;
+    this->pass_through_candidate_limit = pass_through_candidates;
+    this->count_pass_through_goals = count_pass_through || pass_through_candidate_limit > 0;
 }
 
 void SVRPAntColony::k_path_cover(int k) {
-    auto t1 = chrono::high_resolution_clock::now();
 
     int num_nodes = graph.get_num_nodes();
 
-//    cout << "Starting " << k << "-PC construction" << endl;
     cover_id.assign(num_nodes, -1);
     vector<bool> in_cover(num_nodes, true);
     num_cover_nodes = 0;
 
     // Pick KPC nodes
     for (int n = 0; n < num_nodes; ++n) {
-        // Check if the node id is present in the original graph
-//        if (n % 10000 == 0)
-//            cout << n << endl;
 
-        // Docks stay in the cover graph
+        // Terminals must remain endpoints after compression.
         if (n < num_criticals){
             cover_id[n] = num_cover_nodes;
             num_cover_nodes += 1;
@@ -125,16 +125,8 @@ void SVRPAntColony::k_path_cover(int k) {
         }
     }
 
-//    cout << "Initial number of vertices -- " << num_nodes << endl;
-//    cout << "Number of cover vertices -- " << num_cover_nodes << endl;
-//    cout << "Relative vertex percentage -- " << ((float)num_cover_nodes / (float)num_nodes) * 100 << endl;
-
     outgoing_cover_edges.assign(num_cover_nodes, map<int, vector<int>>());
     incoming_cover_edges.assign(num_cover_nodes, map<int, vector<int>>());
-
-    unsigned long num_init_cover_edges = 0;
-
-    unsigned long dom_pruned = 0;
 
     // Build cover edges
     for (int n = 0; n < num_nodes; ++n) {
@@ -171,8 +163,6 @@ void SVRPAntColony::k_path_cover(int k) {
                         cover_params[next_node] = vector<vector<int>>();
                     }
 
-                    num_init_cover_edges += 1;
-
                     // Domination pruning
                     bool is_dominated = false;
                     deque<int> to_remove;
@@ -187,20 +177,15 @@ void SVRPAntColony::k_path_cover(int k) {
                         }
                     }
                     if (is_dominated) {
-                        dom_pruned += 1;
                         continue;
                     }
 
                     while (!to_remove.empty()) {
-                        dom_pruned += 1;
-                        num_cover_edges -= 1;
                         int ind = to_remove.front();
                         to_remove.pop_front();
                         cover_params[next_node].erase(cover_params[next_node].begin() + ind);
                         cover_nodes[next_node].erase(cover_nodes[next_node].begin() + ind);
                     }
-
-                    num_cover_edges += 1;
                     cover_nodes[next_node].push_back(full_path);
                     cover_params[next_node].push_back(new_criteria);
 
@@ -227,55 +212,24 @@ void SVRPAntColony::k_path_cover(int k) {
             }
         }
 
-//        outgoing_cover_edge_nodes[cover_id[n]] = cover_nodes;
-//        outgoing_cover_edge_params[cover_id[n]] = cover_params;
-
     }
-
-
-//    cout << "Initial number of edges -- " << graph.get_num_edges() << endl;
-//    cout << "Number of cover edges -- " << num_init_cover_edges << endl;
-
-    auto t2 = chrono::high_resolution_clock::now();
-
-    double duration = chrono::duration_cast<chrono::nanoseconds>( t2 - t1 ).count();
-    duration *= 1e-9;
-//    cout << "Construction duration: " << duration << endl;
-
-//    cout << "Number of cover edges after pruning -- " << num_cover_edges << endl;
-//    cout << "% pruned edges -- " << ((float)(num_init_cover_edges - num_cover_edges) / (float)num_init_cover_edges) * 100 << endl;
-//    cout << "Pruned by domination -- " << dom_pruned << endl;
-
-//    cout << "Ended " << k << "-PC construction" << endl;
-//    cout << endl;
 
 }
 
-
 map<int, vector<LabelPtr>> SVRPAntColony::t_kpc_mls(int source, bool expand_from_goals){
-    auto t1 = chrono::high_resolution_clock::now();
 
     vector<vector<LabelPtr>> closed_labels(num_cover_nodes);
     vector<vector<LabelPtr>> open_labels(num_cover_nodes);
     vector<int> t_sets(num_cover_nodes, INT_MAX);
     set<LabelPtr, lex_compare> to_expand;
-    long num_labels = 0;
     auto source_label = make_shared<Label>(source, vector<int>(num_parameters, 0), nullptr, -1);
 
     to_expand.insert(source_label);
     open_labels[cover_id[source]].push_back(source_label);
 
-    int num_iters = 0;
-
     while (!to_expand.empty()){
         LabelPtr current_label = *to_expand.begin();
         to_expand.erase(to_expand.begin());
-
-//        if (num_iters % 100000 == 0){
-//            cout << to_expand.size() << endl;
-//        }
-        num_labels++;
-        num_iters += 1;
 
         int current_node = current_label->node;
         vector<int> current_params = current_label->parameters;
@@ -284,7 +238,7 @@ map<int, vector<LabelPtr>> SVRPAntColony::t_kpc_mls(int source, bool expand_from
         closed_labels[cover_id[current_node]].push_back(current_label);
         update_t_set(t_sets[cover_id[current_node]], current_params[1]);
 
-        if (!expand_from_goals && (current_node != source && current_node <= num_criticals)) {
+        if (!expand_from_goals && (current_node != source && current_node < num_criticals)) {
             continue;
         }
 
@@ -312,14 +266,12 @@ map<int, vector<LabelPtr>> SVRPAntColony::t_kpc_mls(int source, bool expand_from
                 vector<LabelPtr>& other_labels = open_labels[cover_id[next_node]];
                 bool is_dominated = false;
                 bool dominates = false;
-//                stack<LabelPtr> to_remove;
                 for (LabelPtr& l : other_labels){
                     if (!dominates && check_domination(l->parameters, new_criteria)){
                         is_dominated = true;
                         break;
                     }
                     else if (check_domination(new_criteria, l->parameters)){
-//                    to_remove.push(l);
                         to_expand.erase(l);
                         l = nullptr;
                         dominates = true;
@@ -331,17 +283,7 @@ map<int, vector<LabelPtr>> SVRPAntColony::t_kpc_mls(int source, bool expand_from
 
                 other_labels.erase(remove_if(other_labels.begin(), other_labels.end(), [&](const LabelPtr lab)-> bool { return !lab; }), other_labels.end());
 
-//                while (!to_remove.empty()){
-//                    auto rit = to_remove.top();
-//                    to_remove.pop();
-//                    to_expand.erase(rit);
-//                    other_labels.erase(rit);
-//                    num_labels--;
-//                }
-
-
                 auto new_label = make_shared<Label>(next_node, new_criteria, current_label, i);
-//                num_labels++;
 
                 open_labels[cover_id[next_node]].push_back(new_label);
                 to_expand.insert(new_label);
@@ -358,12 +300,6 @@ map<int, vector<LabelPtr>> SVRPAntColony::t_kpc_mls(int source, bool expand_from
         }
     }
 
-    auto t2 = chrono::high_resolution_clock::now();
-
-    double duration = chrono::duration_cast<chrono::nanoseconds>( t2 - t1 ).count();
-    duration *= 1e-9;
-//    cout << "Query duration: " << duration << endl;
-
     return bag;
 }
 
@@ -377,16 +313,6 @@ bool SVRPAntColony::epsilon_check_domination(const vector<int>& v1, const vector
 
 bool SVRPAntColony::check_soc_domination(const vector<int>& v1, const vector<int>& v2) {
     return v1[0] <= v2[0] && v1[1] <= v2[1] && v1[2] >= v2[2];
-}
-
-bool SVRPAntColony::check_strict_domination(const vector<int>& v1, const vector<int>& v2) {
-    if ((v1[0] < v2[0]) && (v1[1] <= v2[1])) {
-        return true;
-    }
-    if ((v1[0] <= v2[0]) && (v1[1] < v2[1])) {
-        return true;
-    }
-    return false;
 }
 
 bool SVRPAntColony::check_soc_t_domination(const vector<int>& t, const vector<int>& v) {
@@ -420,7 +346,6 @@ bool SVRPAntColony::soc_t_discard(set<LabelPtr, soc_lex_compare>& closed_labels,
     return false;
 }
 
-
  void SVRPAntColony::update_t_set(int& t_set, int new_l) {
     if (new_l < t_set) {
         t_set = new_l;
@@ -440,7 +365,6 @@ void SVRPAntColony::update_soc_t_set(set<vector<int>>& t_set, LabelPtr lab) {
         it++;
         vector<set<vector<int>>::iterator> to_remove;
         while(it != t_set.end()){
-//            if (new_vec[0] <= (*it)[0] && new_vec[1] <= (*it)[1] && new_vec[2] >= (*it)[2]){
             if (check_soc_domination(new_vec, (*it))){
                 to_remove.push_back(it);
             }
@@ -458,6 +382,7 @@ vector<int> SVRPAntColony::build_simple_timecons(int edge){
 }
 
 vector<int> SVRPAntColony::build_simple_soc(vector<int> edge_params) const{
+    // Backward feasibility summary: minimum starting charge, net use, maximum ending charge.
     int cons = edge_params[1];
     vector<int> new_soc({
                                 max(0, cons),                                       // minSoC_before
@@ -479,12 +404,10 @@ vector<int> SVRPAntColony::link_soc_paths(vector<int>& current_soc, vector<int>&
     return full_soc;
 }
 
-
 ShrinkGraph SVRPAntColony::shrink_graph() {
 
     if (cover_edge_params.empty())
         k_path_cover(k_cover);
-
 
     vector<deque<int>> shrink_edge_nodes;
     vector<vector<int>> shrink_edge_params;
@@ -493,6 +416,27 @@ ShrinkGraph SVRPAntColony::shrink_graph() {
 
 #pragma omp parallel for num_threads(thread_count)
     for (int s = 0; s < num_criticals; ++s) {
+        auto build_shrink_path = [&](LabelPtr start) {
+            vector<int> current_params;
+            deque<int> current_nodes;
+
+            LabelPtr current_label = start;
+            // Add nodes of the current label to the full path
+            while (current_label->node != s) {
+                int end_node = current_label->node;
+                int start_node = current_label->parent->node;
+                deque<int> traversed_nodes = cover_edge_nodes[outgoing_cover_edges[cover_id[start_node]][end_node][current_label->used_edge]];
+                for (auto it = traversed_nodes.rbegin(); it != traversed_nodes.rend() - 1; ++it) {
+                    current_nodes.push_front(*it);
+                }
+                current_label = current_label->parent;
+            }
+            current_nodes.push_front(s);
+
+            current_params = start->parameters;
+            return make_pair(current_nodes, current_params);
+        };
+
         map<int, vector<LabelPtr>> paths = t_kpc_mls(s, false);
 
         // Turn produced paths to other goals into edges
@@ -501,30 +445,84 @@ ShrinkGraph SVRPAntColony::shrink_graph() {
                 continue;
             }
 
-            vector<vector<int>> edge_params;
-            vector<deque<int>> edge_nodes;
-
             for (LabelPtr start: paths[goal]) {
-                vector<int> current_params;
-                deque<int> current_nodes;
+                auto path = build_shrink_path(start);
 
-                LabelPtr current_label = start;
-                // Add nodes of the current label to the full path
-                while (current_label->node != s) {
-                    int end_node = current_label->node;
-                    int start_node = current_label->parent->node;
-                    deque<int> traversed_nodes = cover_edge_nodes[outgoing_cover_edges[cover_id[start_node]][end_node][current_label->used_edge]];
-                    for (auto it = traversed_nodes.rbegin(); it != traversed_nodes.rend() - 1; ++it) {
-                        current_nodes.push_front(*it);
-                    }
-                    current_label = current_label->parent;
+                shrink_edge_params_by_source[s].push_back(path.second);
+                shrink_edge_nodes_by_source[s].push_back(path.first);
+            }
+        }
+
+        if (pass_through_candidate_limit > 0) {
+            // Retain full road paths so internal customers can be marked served.
+            struct PassThroughCandidate {
+                long score;
+                deque<int> nodes;
+                vector<int> params;
+            };
+
+            vector<PassThroughCandidate> candidates;
+            map<int, vector<LabelPtr>> pass_paths = t_kpc_mls(s, true);
+
+            for (int goal = 0; goal < num_criticals; ++goal) {
+                if (goal == s || pass_paths.find(goal) == pass_paths.end()) {
+                    continue;
                 }
-                current_nodes.push_front(s);
 
-                current_params = start->parameters;
+                for (LabelPtr start: pass_paths[goal]) {
+                    auto path = build_shrink_path(start);
+                    bool has_internal_goal = false;
+                    for (int i = 1; i + 1 < path.first.size(); ++i) {
+                        if (path.first[i] != depot && path.first[i] < num_criticals) {
+                            has_internal_goal = true;
+                            break;
+                        }
+                    }
 
-                shrink_edge_params_by_source[s].push_back(current_params);
-                shrink_edge_nodes_by_source[s].push_back(current_nodes);
+                    if (!has_internal_goal) {
+                        continue;
+                    }
+
+                    bool duplicate = false;
+                    for (const auto& existing: shrink_edge_nodes_by_source[s]) {
+                        if (existing == path.first) {
+                            duplicate = true;
+                            break;
+                        }
+                    }
+                    if (duplicate) {
+                        continue;
+                    }
+                    for (const auto& existing: candidates) {
+                        if (existing.nodes == path.first) {
+                            duplicate = true;
+                            break;
+                        }
+                    }
+                    if (duplicate) {
+                        continue;
+                    }
+
+                    candidates.push_back(PassThroughCandidate{
+                            (long)path.second[0] + (long)path.second[1],
+                            std::move(path.first),
+                            std::move(path.second)
+                    });
+                }
+            }
+
+            sort(candidates.begin(), candidates.end(),
+                 [](const PassThroughCandidate& lhs, const PassThroughCandidate& rhs) {
+                     if (lhs.score != rhs.score) {
+                         return lhs.score < rhs.score;
+                     }
+                     return lhs.params < rhs.params;
+                 });
+
+            int added = min(pass_through_candidate_limit, (int)candidates.size());
+            for (int i = 0; i < added; ++i) {
+                shrink_edge_params_by_source[s].push_back(std::move(candidates[i].params));
+                shrink_edge_nodes_by_source[s].push_back(std::move(candidates[i].nodes));
             }
         }
 
@@ -538,13 +536,6 @@ ShrinkGraph SVRPAntColony::shrink_graph() {
     }
 
     ShrinkGraph shrink_graph(num_criticals, shrink_edge_nodes, shrink_edge_params);
-
-    in_connections.resize(num_criticals);
-    out_connections.resize(num_criticals);
-    for (auto &e: shrink_edge_nodes) {
-        in_connections[e.back()].insert(e.front());
-        out_connections[e.front()].insert(e.back());
-    }
 
     return shrink_graph;
 }
@@ -574,16 +565,12 @@ string SVRPAntColony::multicolony_ant_svrp() {
         shrinked_edge_parameters[i] = shrinked_graph.get_edge_parameters(i);
     }
 
-//    cout << "Shrinked graph size: " << shrinked_edge_nodes.size() << endl;
-
     for (int g = 0; g < num_criticals; ++g) {
         if (shrinked_graph.get_outgoing_edges(g).empty() || shrinked_graph.get_incoming_edges(g).empty()) {
-//            cout << "Vertex is not connected" << endl;
             return {};
         }
     }
     if (shrinked_graph.get_outgoing_edges(depot).empty() || shrinked_graph.get_incoming_edges(depot).empty()) {
-//        cout << "Vertex is not connected" << endl;
         return {};
     }
 
@@ -601,12 +588,8 @@ string SVRPAntColony::multicolony_ant_svrp() {
     // Indices of used edges and total parameter values
     deque<pair<deque<int>, vector<int>>> global_solutions;
 
-    // Find initial solution through NN
-//    vector<int> nearest_neighbor_params(num_parameters, 0);
-//    int route_length = vrp_nearest_neighbor_heuristic(nearest_neighbor_params);
-
     // Set pheromones
-    double initial_pheromone = 2.0 / 2;    //1 / (nn[0]/nn[0] + nn[1]/nn[1])
+    double initial_pheromone = 2.0 / 2;
     vector<vector<vector<double>>> pheromones(num_colonies, vector<vector<double>>(shrinked_graph.get_num_edges(), vector<double>(num_parameters, initial_pheromone)));
 
     int full_num_iterations = 0;
@@ -631,7 +614,6 @@ string SVRPAntColony::multicolony_ant_svrp() {
             double interval_base = (double)c / (num_colonies + 1);
             double increment = (double)2 / (num_colonies + 1) / colony_lambda_denominator;
             for (int h = 0; h < num_ants_per_colony; ++h) {
-//              cout << omp_get_thread_num() << endl;
 
                 double lambda1 = interval_base + (h * increment);
                 double lambda2 = 1 - lambda1;
@@ -691,11 +673,9 @@ string SVRPAntColony::multicolony_ant_svrp() {
 
         // Local update
         for (auto &solution: iteration_solutions) {
-//            double penalty = (double)(solution.first.size() - (num_jumps))/solution.first.size();
             for (auto& p: solution.second.first) {
                 for (int i = 0; i < num_parameters; ++i) {
                     pheromones[solution.first][p][i] += (double) 1 / iteration_solutions.size();
-//                        pheromones[p.first][i] += (double) penalty / iteration_solutions.size();
                 }
 
             }
@@ -766,12 +746,6 @@ string SVRPAntColony::multicolony_ant_svrp() {
         }
     }
 
-//    if (!global_solutions.empty())
-//        save_route(global_solutions[0].first);
-
-//    cout << exploitations << " exploitations and " << explorations << " explorations" << endl;
-//    cout << num_steps << " steps and " << num_plans << " plans" << endl;
-
     auto t2 = chrono::high_resolution_clock::now();
 
     double duration = chrono::duration_cast<chrono::nanoseconds>( t2 - t1 ).count();
@@ -782,6 +756,11 @@ string SVRPAntColony::multicolony_ant_svrp() {
 
     answer_string += to_string(full_num_iterations) + "," + to_string(duration) + " ";
 
+    sort(global_solutions.begin(), global_solutions.end(),
+         [](const auto& lhs, const auto& rhs) {
+             return lhs.second < rhs.second;
+         });
+
     for (auto &sol: global_solutions) {
         answer_string += "(" + to_string(sol.second[0]) + ";" + to_string(sol.second[1]) + "),";
     }
@@ -789,8 +768,11 @@ string SVRPAntColony::multicolony_ant_svrp() {
     return answer_string;
 }
 
-// Main solution function for kPC-STSP
-string SVRPAntColony::bicriterion_ant_svrp() {
+// Optimize the sparse terminal graph and return validated Pareto outcomes.
+SolverRunResult SVRPAntColony::bicriterion_ant_svrp_result() {
+    SolverRunResult result;
+    result.solver = "svrp";
+    auto total_start = chrono::high_resolution_clock::now();
     // hyperparameters
     double evaporation_rate = 0.05;
     double exploration_probability = 0.1;
@@ -803,7 +785,9 @@ string SVRPAntColony::bicriterion_ant_svrp() {
     auto s2 = chrono::high_resolution_clock::now();
     double s_dur = chrono::duration_cast<chrono::nanoseconds>( s2 - s1 ).count();
     s_dur *= 1e-9;
-    answer_string += std::to_string(shrinked_graph.get_num_nodes()) + "," + std::to_string(shrinked_graph.get_num_edges()) + "," + to_string(s_dur) + " ";
+    result.preprocessing_seconds = s_dur;
+    result.graph_nodes = shrinked_graph.get_num_nodes();
+    result.graph_edges = shrinked_graph.get_num_edges();
 
     shrinked_edge_nodes.resize(shrinked_graph.get_num_edges());
     shrinked_edge_parameters.resize(shrinked_graph.get_num_edges());
@@ -812,17 +796,19 @@ string SVRPAntColony::bicriterion_ant_svrp() {
         shrinked_edge_parameters[i] = shrinked_graph.get_edge_parameters(i);
     }
 
-//    cout << "Shrinked graph size: " << shrinked_edge_nodes.size() << endl;
-
     for (int g = 0; g < num_criticals; ++g) {
         if (shrinked_graph.get_outgoing_edges(g).empty() || shrinked_graph.get_incoming_edges(g).empty()) {
-//            cout << "Vertex is not connected" << endl;
-            return {};
+            result.status = "disconnected";
+            result.message = "a required vertex has no incoming or outgoing edge";
+            result.total_seconds = chrono::duration<double>(chrono::high_resolution_clock::now() - total_start).count();
+            return result;
         }
     }
     if (shrinked_graph.get_outgoing_edges(depot).empty() || shrinked_graph.get_incoming_edges(depot).empty()) {
-//        cout << "Vertex is not connected" << endl;
-        return {};
+        result.status = "disconnected";
+        result.message = "the depot has no incoming or outgoing edge";
+        result.total_seconds = chrono::duration<double>(chrono::high_resolution_clock::now() - total_start).count();
+        return result;
     }
 
     energy_to_depot = backward_t_kpc_mls(depot);
@@ -839,12 +825,8 @@ string SVRPAntColony::bicriterion_ant_svrp() {
     // Indices of used edges and total parameter values
     deque<pair<deque<int>, vector<int>>> pareto_solutions;
 
-    // Find initial solution through NN
-//    vector<int> nearest_neighbor_params(num_parameters, 0);
-//    int route_length = vrp_nearest_neighbor_heuristic(nearest_neighbor_params);
-
     // Set pheromones
-    double initial_pheromone = 2.0 / 2;    //1 / (nn[0]/nn[0] + nn[1]/nn[1])
+    double initial_pheromone = 2.0 / 2;
     vector<vector<double>> pheromones(shrinked_graph.get_num_edges(), vector<double>(num_parameters, initial_pheromone));
 
     int full_num_iterations = 0;
@@ -858,13 +840,12 @@ string SVRPAntColony::bicriterion_ant_svrp() {
         full_num_iterations += 1;
         bool set_updated = false;
         deque<pair<deque<int>, vector<int>>> iteration_solutions;
+        // Workers write separate slots; pheromones stay read-only during construction.
         vector<pair<deque<int>, vector<int>>> candidate_solutions(num_ants);
-        auto tt1 = chrono::high_resolution_clock::now();
 
         int ant_lambda_denominator = max(1, num_ants - 1);
 #pragma omp parallel for num_threads(thread_count)
         for (int h = 0; h < num_ants; ++h) {
-//            cout << omp_get_thread_num() << endl;
 
             double lambda1 = (double)h / ant_lambda_denominator;
             double lambda2 = 1 - lambda1;
@@ -875,8 +856,17 @@ string SVRPAntColony::bicriterion_ant_svrp() {
             candidate_solutions[h] = std::move(candidate_solution);
         }
 
+        // Merge in ant order so thread scheduling cannot reorder the Pareto updates.
         for (auto &candidate_solution: candidate_solutions) {
             if (candidate_solution.first.empty()) {
+                continue;
+            }
+
+            int route_count = 0;
+            string validation_error;
+            if (!validate_solution(candidate_solution.first, candidate_solution.second,
+                                   route_count, validation_error)) {
+                result.invalid_candidates += 1;
                 continue;
             }
 
@@ -892,9 +882,6 @@ string SVRPAntColony::bicriterion_ant_svrp() {
                 }
             }
 
-//                if (dominated) {
-//                    continue;
-//                } else {
             if (!dominated) {
                 // Update set for the new solution
                 // Remove dominated ones
@@ -908,11 +895,6 @@ string SVRPAntColony::bicriterion_ant_svrp() {
             }
         }
 
-        auto tt2 = chrono::high_resolution_clock::now();
-        double dur = chrono::duration_cast<chrono::nanoseconds>( tt2 - tt1 ).count();
-        dur *= 1e-9;
-//        cout << "Iteration duration: " << dur << endl;
-
         // Decrease pheromones
         for (int e = 0; e < shrinked_graph.get_num_edges(); ++e) {
             for (int i = 0; i < num_parameters; ++i) {
@@ -921,11 +903,9 @@ string SVRPAntColony::bicriterion_ant_svrp() {
         }
         // Local update
         for (auto &solution: iteration_solutions) {
-//            double penalty = (double)(solution.first.size() - (num_jumps))/solution.first.size();
             for (auto& p: solution.first) {
                 for (int i = 0; i < num_parameters; ++i) {
                     pheromones[p][i] += (double) 1 / iteration_solutions.size();
-//                        pheromones[p.first][i] += (double) penalty / iteration_solutions.size();
                 }
 
             }
@@ -973,15 +953,6 @@ string SVRPAntColony::bicriterion_ant_svrp() {
         }
         iteration_solutions.clear();
 
-        if (!pareto_solutions.empty()) {
-            double average = 0;
-            for (auto &s: pareto_solutions) {
-                average += s.second[0];
-            }
-            average /= pareto_solutions.size();
-        }
-
-
         if (set_updated) {
             itr = 0;
         }
@@ -991,64 +962,41 @@ string SVRPAntColony::bicriterion_ant_svrp() {
 
     double duration = chrono::duration_cast<chrono::nanoseconds>( t2 - t1 ).count();
     duration *= 1e-9;
-//    cout << "Optimization duration: " << duration << endl;
 
-    answer_string = "";
-    answer_string += to_string(shrinked_graph.get_num_edges()) + ",";
+    result.iterations = full_num_iterations;
+    result.optimization_seconds = duration;
 
-    answer_string += to_string(full_num_iterations) + "," + to_string(duration) + " ";
+    sort(pareto_solutions.begin(), pareto_solutions.end(),
+         [](const auto& lhs, const auto& rhs) {
+             return lhs.second < rhs.second;
+         });
 
     for (auto &sol: pareto_solutions) {
-        answer_string += "(" + to_string(sol.second[0]) + ";" + to_string(sol.second[1]) + "),";
+        int route_count = 0;
+        string validation_error;
+        if (validate_solution(sol.first, sol.second, route_count, validation_error)) {
+            result.pareto.push_back(SolverParetoPoint{sol.second, route_count});
+        } else {
+            result.invalid_candidates += 1;
+        }
     }
 
-    return answer_string;
+    result.status = result.pareto.empty() ? "no_solution" : "ok";
+    if (result.pareto.empty()) {
+        result.message = "no validated Pareto solution was produced";
+    }
+    result.total_seconds = chrono::duration<double>(chrono::high_resolution_clock::now() - total_start).count();
+    return result;
 }
 
-void SVRPAntColony::save_route(deque<int> &route_edges) {
-    vector<pair<double, double>> node_coords;
-
-    ifstream coords_file;
-    coords_file.open("D:/Work/data/finished_berlin_nodes.csv");
-    string line;
-    getline(coords_file, line);
-
-    while (getline(coords_file, line, ',')) {
-        getline(coords_file, line, ',');
-        double latitude = stof(line);
-
-        getline(coords_file, line, '\n');
-        double longitude = stof(line);
-
-        node_coords.emplace_back(latitude, longitude);
-    }
-
-    ofstream file;
-    string file_path = "../traversed_distance_svrp_edges.csv";
-    file.open(file_path);
-    file << "latitude_1, longitude_1, latitude_2, longitude_2\n";
-
-    for (auto& e : route_edges) {
-        int start = shrinked_edge_nodes[e].first;
-        int end = shrinked_edge_nodes[e].second;
-        file << node_coords[graph.get_id_to_goal(start)].first << "," << node_coords[graph.get_id_to_goal(start)].second << "," << node_coords[graph.get_id_to_goal(end)].first << "," << node_coords[graph.get_id_to_goal(end)].second << "\n";
-    }
-    file.close();
-
-    file.open("../goal_node_coords.csv");
-    file << "latitude,longitude,id\n";
-    for (int g = 0; g < num_criticals; ++g) {
-        file << node_coords[graph.get_id_to_goal(g)].first << "," << node_coords[graph.get_id_to_goal(g)].second << "," << graph.get_id_to_goal(g) << "\n";
-    }
-    file.close();
+string SVRPAntColony::bicriterion_ant_svrp() {
+    return bicriterion_ant_svrp_result().legacy_answer();
 }
 
 pair<deque<int>, vector<int>> SVRPAntColony::bicriterion_svrp_ant_crawl(vector<vector<double>>& pheromones, double& alpha, double& beta, double& lambda1, double& lambda2, double& exploration_probability, double& evaporation_rate, double& initial_pheromone, mt19937& rng) {
     // For all vehicles
     deque<int> route_edges;
     deque<int> route_nodes;
-
-    double mutation_probability = 0.0;
 
     int num_nodes = num_criticals;
     int num_edges = shrinked_graph.get_num_edges();
@@ -1073,16 +1021,11 @@ pair<deque<int>, vector<int>> SVRPAntColony::bicriterion_svrp_ant_crawl(vector<v
     // Main loop
     bool search_finished = false;
     while (!search_finished) {
-//        cout << goals_to_visit << endl;
         // Build possible steps
         vector<int> edges_to_unvisited;
         vector<int> edges_to_depot;
-        // Reserve memory beforehand
         for (int out: shrinked_graph.get_outgoing_edges(current_vertex)) {
-            //int next_vertex = shrinked_graph.get_edge_nodes(out).back();
             int next_vertex = shrinked_edge_nodes[out].second;
-//            if (traversal_times >= 2)
-//                continue;
             // Check for depot
             if (next_vertex == depot) {
                 edges_to_depot.push_back(out);
@@ -1099,28 +1042,85 @@ pair<deque<int>, vector<int>> SVRPAntColony::bicriterion_svrp_ant_crawl(vector<v
         }
 
         // An unvisited vertex is available
-        // Choose equally by edges ----------------------------
-        if (!edges_to_unvisited.empty()) {
-            int chosen_edge = bicriterion_ant_pick_edge(edges_to_unvisited, pheromones, exploration_probability, alpha, beta, lambda1, lambda2, rng);
-            int next_vertex = shrinked_edge_nodes[chosen_edge].second;
-            // Make a transition
-            current_vertex = next_vertex;
-            current_nodes.push_back(current_vertex);
-            current_edges.push_back(chosen_edge);
-            current_parameters[0] += shrinked_edge_parameters[chosen_edge][0];
-            current_parameters[1] = add_energy(current_parameters[1], shrinked_edge_parameters[chosen_edge][1]);
-            goals_to_visit -= 1;
-            goal_visited[current_vertex] += 1;
+            if (!edges_to_unvisited.empty()) {
+            bool planned_move_used = false;
+            if (compare_direct_with_planned) {
+                vector<pair<deque<int>, vector<int>>> planned_routes = bicriterion_ant_plan(current_vertex, current_parameters, goal_visited, false);
+                vector<pair<deque<int>, vector<int>>> planned_choices;
 
-//            for (int v : in_connections[current_vertex]) {
-//                out_times[v]--;
-//            }
+                // Always include direct 1-hop edges to prevent epsilon-dominance pruning
+                for (int e : edges_to_unvisited) {
+                    deque<int> deq = {e};
+                    vector<int> direct_params = current_parameters;
+                    direct_params[0] += shrinked_edge_parameters[e][0];
+                    direct_params[1] = add_energy(direct_params[1], shrinked_edge_parameters[e][1]);
+                    planned_choices.push_back(make_pair(deq, direct_params));
+                }
+
+                for (auto &route: planned_routes) {
+                    if (!route.first.empty()) {
+                        // Avoid duplicates if length is 1
+                        if (route.first.size() == 1) continue;
+                        planned_choices.push_back(route);
+                    }
+                }
+
+                auto chosen_path = bicriterion_ant_jump_overhead(planned_choices, pheromones, exploration_probability, alpha, beta, lambda1, lambda2, rng);
+                if (!chosen_path.first.empty()) {
+                    int newly_visited = 0;
+                    for (int e : chosen_path.first) {
+                        current_nodes.push_back(shrinked_edge_nodes[e].second);
+                        current_edges.push_back(e);
+                        current_parameters[0] += shrinked_edge_parameters[e][0];
+                        current_parameters[1] = add_energy(current_parameters[1], shrinked_edge_parameters[e][1]);
+
+                        current_vertex = current_nodes.back();
+                        newly_visited += mark_visited_goals_on_edge(e, goal_visited);
+                    }
+                    goals_to_visit -= newly_visited;
+
+                    if (current_vertex == depot) {
+                        current_nodes.pop_back();
+
+                        current_vehicle += 1;
+                        if (goals_to_visit > 0 && current_vehicle >= max_vehicles) {
+                            return make_pair(deque<int>(), vector<int>());
+                        }
+                        for (int i = 0; i < num_parameters; ++i) {
+                            total_parameters[i] += current_parameters[i];
+                        }
+                        for (int v: current_nodes) {
+                            route_nodes.push_back(v);
+                        }
+                        for (auto e: current_edges) {
+                            route_edges.push_back(e);
+                        }
+                        current_nodes.clear();
+                        current_nodes.push_back(depot);
+                        current_edges.clear();
+                        current_parameters.assign(num_parameters, 0);
+                    }
+                    planned_move_used = true;
+                }
+            }
+
+            if (!planned_move_used) {
+                int chosen_edge = bicriterion_ant_pick_edge(edges_to_unvisited, pheromones, exploration_probability, alpha, beta, lambda1, lambda2, rng);
+                int next_vertex = shrinked_edge_nodes[chosen_edge].second;
+                // Make a transition
+                current_vertex = next_vertex;
+                current_nodes.push_back(current_vertex);
+                current_edges.push_back(chosen_edge);
+                current_parameters[0] += shrinked_edge_parameters[chosen_edge][0];
+                current_parameters[1] = add_energy(current_parameters[1], shrinked_edge_parameters[chosen_edge][1]);
+                goals_to_visit -= mark_visited_goals_on_edge(chosen_edge, goal_visited);
+            }
 
         }
             // Choose a previously visited vertex
             // Since no near vertices must be visited, use t-kPC-MLS and new heuristic to choose the most promising path
         else {
-            vector<pair<deque<int>, vector<int>>> planned_routes = bicriterion_ant_plan(current_vertex, current_parameters,  goal_visited);
+            vector<pair<deque<int>, vector<int>>> planned_routes = bicriterion_ant_plan(current_vertex, current_parameters, goal_visited, true);
             vector<pair<deque<int>, vector<int>>> paths_to_goals;
             vector<pair<deque<int>, vector<int>>> paths_to_depot;
 
@@ -1134,11 +1134,11 @@ pair<deque<int>, vector<int>> SVRPAntColony::bicriterion_svrp_ant_crawl(vector<v
             }
             if (current_vertex == depot) {
                 // Jump to an unvisited vertex
-//                vector<pair<deque<int>, vector<int>>> planned_routes = bicriterion_ant_plan(current_vertex, current_parameters,  goal_visited);
                 auto chosen_path = bicriterion_ant_jump_overhead(paths_to_goals, pheromones, exploration_probability, alpha, beta, lambda1, lambda2, rng);
                 if (chosen_path.first.empty()) {
                     return make_pair(deque<int>(), vector<int>());
                 }
+                int newly_visited = 0;
                 for (int e : chosen_path.first) {
                     current_nodes.push_back(shrinked_edge_nodes[e].second);
                     current_edges.push_back(e);
@@ -1146,25 +1146,22 @@ pair<deque<int>, vector<int>> SVRPAntColony::bicriterion_svrp_ant_crawl(vector<v
                     current_parameters[1] = add_energy(current_parameters[1], shrinked_edge_parameters[e][1]);
 
                     current_vertex = current_nodes.back();
-                    goal_visited[current_vertex] += 1;
+                    newly_visited += mark_visited_goals_on_edge(e, goal_visited);
                 }
-                goals_to_visit -= 1;
+                goals_to_visit -= newly_visited;
             }
             // Jump
             else {
                 if (!paths_to_goals.empty()) {
-                    double prob = mut_uni(rng);
-                    if (prob < mutation_probability) {
-                        if (invert_subtour(current_nodes, current_edges, current_parameters, current_vertex, paths_to_goals, pheromones, exploration_probability, alpha, beta, lambda1, lambda2, rng)) {
-                            current_vertex = current_nodes.back();
-                            continue;
-                        }
-                    }
+                    // The removed mutation path had zero probability, but consumed a
+                    // draw here. Keep that RNG advance to preserve seeded runs.
+                    (void)mut_uni(rng);
 
                     auto chosen_path = bicriterion_ant_jump_overhead(paths_to_goals, pheromones, exploration_probability, alpha, beta, lambda1, lambda2, rng);
                     if (chosen_path.first.empty()) {
                         return make_pair(deque<int>(), vector<int>());
                     }
+                    int newly_visited = 0;
                     for (int e : chosen_path.first) {
                         current_nodes.push_back(shrinked_edge_nodes[e].second);
                         current_edges.push_back(e);
@@ -1172,15 +1169,16 @@ pair<deque<int>, vector<int>> SVRPAntColony::bicriterion_svrp_ant_crawl(vector<v
                         current_parameters[1] = add_energy(current_parameters[1], shrinked_edge_parameters[e][1]);
 
                         current_vertex = current_nodes.back();
-                        goal_visited[current_vertex] += 1;
+                        newly_visited += mark_visited_goals_on_edge(e, goal_visited);
                     }
-                    goals_to_visit -= 1;
+                    goals_to_visit -= newly_visited;
                 }
                 else {
                     auto chosen_path = bicriterion_ant_jump_overhead(paths_to_depot, pheromones, exploration_probability, alpha, beta, lambda1, lambda2, rng);
                     if (chosen_path.first.empty()) {
                         return make_pair(deque<int>(), vector<int>());
                     }
+                    int newly_visited = 0;
                     for (int e : chosen_path.first) {
                         current_nodes.push_back(shrinked_edge_nodes[e].second);
                         current_edges.push_back(e);
@@ -1188,15 +1186,16 @@ pair<deque<int>, vector<int>> SVRPAntColony::bicriterion_svrp_ant_crawl(vector<v
                         current_parameters[1] = add_energy(current_parameters[1], shrinked_edge_parameters[e][1]);
 
                         current_vertex = current_nodes.back();
-                        if (goal_visited[current_vertex] == 0) {
-                            goals_to_visit--;
-                        }
-                        goal_visited[current_vertex] += 1;
+                        newly_visited += mark_visited_goals_on_edge(e, goal_visited);
                     }
+                    goals_to_visit -= newly_visited;
 
                     current_nodes.pop_back();
 
                     current_vehicle += 1;
+                    if (goals_to_visit > 0 && current_vehicle >= max_vehicles) {
+                        return make_pair(deque<int>(), vector<int>());
+                    }
                     for (int i = 0; i < num_parameters; ++i) {
                         total_parameters[i] += current_parameters[i];
                     }
@@ -1222,247 +1221,6 @@ pair<deque<int>, vector<int>> SVRPAntColony::bicriterion_svrp_ant_crawl(vector<v
     }
 
     return make_pair(route_edges, total_parameters);
-}
-
-bool SVRPAntColony::invert_subtour(deque<int> &current_nodes, deque<int> &current_edges, vector<int> &current_parameters, int dead_end, const vector<pair<deque<int>, vector<int>>>& paths_to_goals,
-                                   vector<vector<double>> &pheromones, double &exploration_probability, double &alpha, double &beta,
-                                   double &lambda1, double &lambda2, mt19937 &rng) {
-    // Pick randomly reroute endpoint
-    uniform_int_distribution<int> p_uni(0, paths_to_goals.size() - 1);
-    auto possible_path = paths_to_goals[p_uni(rng)];
-    deque<int> chosen_path = possible_path.first;
-    vector<int> chosen_parameters = possible_path.second;
-    int new_endpoint = shrinked_graph.get_edge_nodes(chosen_path.back())[0];
-    if (new_endpoint == depot) {
-        return false;
-    }
-
-    int ind = current_nodes.size() - 1;
-    while (ind > 0 && current_nodes[ind] != new_endpoint) {
-        ind--;
-    }
-    ind--;
-    if (ind <= 0) {
-        return false;
-    }
-    int new_origin = current_nodes[ind];
-
-    deque<int> new_nodes;
-    new_nodes.push_back(current_nodes[0]);
-    deque<int> new_edges;
-    new_edges.push_back(current_edges[0]);
-    int current_node = current_nodes[1];
-    int k = 1;
-    while (k < ind) {
-        new_nodes.push_back(current_node);
-        new_edges.push_back(current_edges[k]);
-        k++;
-        current_node = current_nodes[k];
-    }
-
-    new_nodes.push_back(new_origin);
-
-    // Try to find a direct edge between new origin and dead end
-    vector<int> direct_edges;
-    for (int e: shrinked_graph.get_outgoing_edges(new_origin)) {
-        if (shrinked_edge_nodes[e].second == dead_end) {
-            direct_edges.push_back(e);
-        }
-    }
-    // There is a direct edge, build a route
-    if (!direct_edges.empty()) {
-//            cout << "Direct edge found" << endl;
-        current_node = new_origin;
-        int next_node = current_nodes.back();
-        k = current_nodes.size() - 1;
-        bool infeasible = false;
-        while (current_node != new_endpoint) {
-            vector<int> possible_edges;
-            for (int e: shrinked_graph.get_outgoing_edges(current_node)) {
-                if (shrinked_edge_nodes[e].second == next_node) {
-                    possible_edges.push_back(e);
-                }
-            }
-            if (possible_edges.empty()) {
-//                    cout << "No edge for reverse route" << endl;
-                infeasible = true;
-                break;
-            }
-            new_edges.push_back(bicriterion_ant_pick_edge(possible_edges, pheromones, exploration_probability, alpha, beta, lambda1, lambda2, rng));
-            new_nodes.push_back(next_node);
-            current_node = next_node;
-            k--;
-            next_node = current_nodes[k];
-        }
-        if (infeasible) {
-            return false;
-        }
-
-        vector<int> new_parameters(num_parameters, 0);
-        bool feasible = true;
-        for (int new_edge : new_edges) {
-            int new_energy = add_energy(new_parameters[1], shrinked_edge_parameters[new_edge][1]);
-            if (new_energy > battery_capacity) {
-                feasible = false;
-                break;
-            }
-            new_parameters[0] += shrinked_edge_parameters[new_edge][0];
-            new_parameters[1] = new_energy;
-        }
-        if (!feasible) {
-//                cout << "Inverse route is infeasible" << endl;
-            return false;
-        }
-
-        vector<int> potential_parameters = current_parameters;
-        potential_parameters[0] += chosen_parameters[0];
-        potential_parameters[1] = add_energy(potential_parameters[1], chosen_parameters[1]);
-        if (check_strict_domination(potential_parameters, new_parameters)) {
-//                cout << "Inverse route is dominated" << endl;
-            return false;
-        }
-
-//        cout << new_parameters.size() << endl;
-
-        current_nodes = std::move(new_nodes);
-        current_edges = std::move(new_edges);
-        current_parameters = std::move(new_parameters);
-        cout << "Route inverted direct" << endl;
-        return true;
-    }
-
-    return false;
-}
-
-vector<pair<deque<int>, vector<int>>> SVRPAntColony::plan_to_goal(int source, int goal, const vector<int>& source_parameters, set<int>& available_vertices) {
-    auto t1 = chrono::high_resolution_clock::now();
-
-    vector<pair<deque<int>, vector<int>>> routes;
-
-    int num_nodes = shrinked_graph.get_num_nodes();
-
-    unordered_map<int, vector<LabelPtr>> closed_labels;
-    unordered_map<int, vector<LabelPtr>> open_labels;
-    unordered_map<int, int> t_sets;
-    for (int l: available_vertices) {
-        closed_labels[l] = vector<LabelPtr>();
-        open_labels[l] = vector<LabelPtr>();
-        t_sets[l] = INT_MAX;
-    }
-    set<LabelPtr, lex_compare> to_expand;
-    long num_labels = 0;
-    auto source_label = make_shared<Label>(source, source_parameters, nullptr, -1);
-//    num_labels++;
-
-    to_expand.insert(source_label);
-    open_labels[source].push_back(source_label);
-
-    int num_iters = 0;
-
-    while (!to_expand.empty()){
-        LabelPtr current_label = *to_expand.begin();
-        to_expand.erase(to_expand.begin());
-
-
-        num_iters += 1;
-
-        num_labels++;
-
-        int current_node = current_label->node;
-        vector<int> current_params = current_label->parameters;
-
-        open_labels[current_node].erase(remove(open_labels[current_node].begin(), open_labels[current_node].end(), current_label));
-        closed_labels[current_node].push_back(current_label);
-        update_t_set(t_sets[current_node], current_params[1]);
-
-        vector<int> new_criteria(num_parameters);
-
-        for (int e : shrinked_graph.get_outgoing_edges(current_node)){
-            int next_node = shrinked_edge_nodes[e].second;
-            if (available_vertices.find(next_node) == available_vertices.end()) {
-                continue;
-            }
-
-            if (current_label->parent && next_node == current_label->parent->node){
-                continue;
-            }
-
-            new_criteria[0] = current_params[0] + shrinked_edge_parameters[e][0];
-            new_criteria[1] = max(0, current_params[1] + shrinked_edge_parameters[e][1]);
-
-            if (t_discard(t_sets[goal], new_criteria)) {
-                continue;
-            }
-
-            // Check energy feasibility
-            if (battery_capacity - new_criteria[1] < energy_to_depot[cover_id[next_node]][0]) {
-                continue;
-            }
-
-            // Check for t-dominance by closed labels
-            bool t_discarded = t_discard(t_sets[next_node], new_criteria);
-            if (t_discarded)
-                continue;
-
-            // Check if is dominated by or dominates open labels
-            bool dominates = false;
-            vector<LabelPtr>& other_labels = open_labels[next_node];
-            bool is_dominated = false;
-            for (LabelPtr& l : other_labels){
-                if (!dominates && check_domination(l->parameters, new_criteria)){
-                    is_dominated = true;
-                    break;
-                }
-                else if (check_domination(new_criteria, l->parameters)){
-//                    to_remove.push(l);
-                    to_expand.erase(l);
-                    l = nullptr;
-                    dominates = true;
-                }
-            }
-
-            if (is_dominated)
-                continue;
-
-            other_labels.erase(remove_if(other_labels.begin(), other_labels.end(), [&](const LabelPtr lab)-> bool { return !lab; }), other_labels.end());
-
-            auto new_label = make_shared<Label>(next_node, new_criteria, current_label, e);
-
-            open_labels[next_node].push_back(new_label);
-            to_expand.insert(new_label);
-        }
-    }
-
-    for (auto& current_label : closed_labels[goal]) {
-        deque<int> used_edges;
-        vector<int> used_params = source_parameters;
-        LabelPtr cur = current_label;
-        while (cur->node != source) {
-            used_edges.push_front(cur->used_edge);
-            cur = cur->parent;
-        }
-        bool invalid = false;
-        for (int e: used_edges) {
-            used_params[0] += shrinked_edge_parameters[e][0];
-            used_params[1] = max(0, used_params[1] + shrinked_edge_parameters[e][1]);
-            if (used_params[1] > battery_capacity) {
-                invalid = true;
-                break;
-            }
-        }
-        if (invalid) {
-            continue;
-        }
-        routes.emplace_back(used_edges, used_params);
-    }
-
-
-    auto t2 = chrono::high_resolution_clock::now();
-
-    double duration = chrono::duration_cast<chrono::nanoseconds>( t2 - t1 ).count();
-    duration *= 1e-9;
-
-    return routes;
 }
 
 pair<deque<int>, vector<int>> SVRPAntColony::bicriterion_ant_jump_overhead(const vector<pair<deque<int>, vector<int>>>& paths_to_goals,
@@ -1538,13 +1296,15 @@ pair<deque<int>, vector<int>> SVRPAntColony::bicriterion_ant_jump_overhead(const
     return paths_to_goals[chosen_path];
 }
 
-
-vector<pair<deque<int>, vector<int>>> SVRPAntColony::bicriterion_ant_plan(int source, vector<int> source_parameters, vector<int>& goal_visited) {
-    auto t1 = chrono::high_resolution_clock::now();
+vector<pair<deque<int>, vector<int>>> SVRPAntColony::bicriterion_ant_plan(int source, vector<int> source_parameters, vector<int>& goal_visited, bool allow_depot) {
+    // Expand through visited terminals and stop at unserved customers (or an allowed depot).
 
     vector<pair<deque<int>, vector<int>>> routes;
-    if (source != depot)
+    int original_depot_visited = goal_visited[depot];
+    if (allow_depot && source != depot)
         goal_visited[depot] = 0;
+    else
+        goal_visited[depot] = 1; // Prevent stopping at depot unless allowed
 
     int num_nodes = shrinked_graph.get_num_nodes();
 
@@ -1552,25 +1312,14 @@ vector<pair<deque<int>, vector<int>>> SVRPAntColony::bicriterion_ant_plan(int so
     vector<vector<LabelPtr>> open_labels(num_nodes);
     vector<int> t_sets(num_nodes, INT_MAX);
     set<LabelPtr, lex_compare> to_expand;
-    long num_labels = 0;
     auto source_label = make_shared<Label>(source, std::move(source_parameters), nullptr, -1);
-//    num_labels++;
 
     to_expand.insert(source_label);
     open_labels[source].push_back(source_label);
 
-    int num_iters = 0;
-
     while (!to_expand.empty()){
         LabelPtr current_label = *to_expand.begin();
         to_expand.erase(to_expand.begin());
-
-//        if (num_iters % 100000 == 0){
-//            cout << to_expand.size() << endl;
-//        }
-        num_iters += 1;
-
-        num_labels++;
 
         int current_node = current_label->node;
         vector<int> current_params = current_label->parameters;
@@ -1592,15 +1341,12 @@ vector<pair<deque<int>, vector<int>>> SVRPAntColony::bicriterion_ant_plan(int so
         }
 
         vector<int> new_criteria(num_parameters);
-//        stack<LabelPtr> to_remove;
 
         for (int e : shrinked_graph.get_outgoing_edges(current_node)){
             int next_node = shrinked_edge_nodes[e].second;
 
             if (current_label->parent && next_node == current_label->parent->node)
                 continue;
-
-            //vector<int> new_criteria = link_paths(current_params, shrinked_edge_parameters[e]);
 
             new_criteria[0] = current_params[0] + shrinked_edge_parameters[e][0];
             new_criteria[1] = max(0, current_params[1] + shrinked_edge_parameters[e][1]);
@@ -1617,7 +1363,6 @@ vector<pair<deque<int>, vector<int>>> SVRPAntColony::bicriterion_ant_plan(int so
 
             // Check if is dominated by or dominates open labels
 
-
             bool dominates = false;
             vector<LabelPtr>& other_labels = open_labels[next_node];
             bool is_dominated = false;
@@ -1627,7 +1372,6 @@ vector<pair<deque<int>, vector<int>>> SVRPAntColony::bicriterion_ant_plan(int so
                     break;
                 }
                 else if (epsilon_check_domination(new_criteria, l->parameters)){
-//                    to_remove.push(l);
                     to_expand.erase(l);
                     l = nullptr;
                     dominates = true;
@@ -1639,226 +1383,16 @@ vector<pair<deque<int>, vector<int>>> SVRPAntColony::bicriterion_ant_plan(int so
 
             other_labels.erase(remove_if(other_labels.begin(), other_labels.end(), [&](const LabelPtr lab)-> bool { return !lab; }), other_labels.end());
 
-//            while (!to_remove.empty()){
-//                auto rit = to_remove.top();
-//                to_remove.pop();
-//                to_expand.erase(rit);
-//                other_labels.erase(rit);
-//                num_labels--;
-//            }
-
             auto new_label = make_shared<Label>(next_node, new_criteria, current_label, e);
-//            num_labels++;
 
             open_labels[next_node].push_back(new_label);
             to_expand.insert(new_label);
         }
     }
 
-    goal_visited[depot] = 1;
-
-    auto t2 = chrono::high_resolution_clock::now();
-
-    double duration = chrono::duration_cast<chrono::nanoseconds>( t2 - t1 ).count();
-    duration *= 1e-9;
+    goal_visited[depot] = original_depot_visited;
 
     return routes;
-}
-
-void SVRPAntColony::bicriterion_two_opt(deque<int> &current_nodes, deque<int> &current_edges, vector<int> &current_parameters,
-                                        vector<vector<double>> &pheromones, double &exploration_probability, double &alpha, double &beta,
-                                        double &lambda1, double &lambda2, mt19937 &rng) {
-    deque<int> best_nodes;
-    deque<int> best_edges;
-    vector<int> best_parameters(num_parameters, INT_MAX);
-
-    bool improved = true;
-
-    while (improved) {
-        improved = false;
-        for (int v1 = 0; v1 < current_edges.size() - 2; ++v1) {
-            for (int v2 = v1 + 2; v2 < current_edges.size(); ++v2) {
-                deque<int> candidate_nodes(current_nodes);
-                deque<int> candidate_edges(current_edges);
-                vector<int> candidate_parameters(num_parameters, 0);
-
-                // Reorder nodes
-                int r1 = v1 + 1;
-                int r2 = v2;
-                while (r2 - r1 > 0) {
-                    int r = candidate_nodes[r1];
-                    candidate_nodes[r1] = candidate_nodes[r2];
-                    candidate_nodes[r2] = r;
-                    r1 += 1;
-                    r2 -= 1;
-                }
-
-                bool unable = false;
-
-                // Repick edges
-                for (int i = v1; i <= v2; ++i) {
-                    int route_from = candidate_nodes[i];
-                    int route_to = candidate_nodes[i + 1];
-                    vector<int> possible_edges;
-                    for (int e: shrinked_graph.get_outgoing_edges(route_from)) {
-                        if (shrinked_edge_nodes[e].second == route_to) {
-                            possible_edges.push_back(e);
-                        }
-                    }
-                    if (possible_edges.empty()) {
-                        unable = true;
-                        break;
-                    }
-                    candidate_edges[i] = bicriterion_ant_pick_edge(possible_edges, pheromones, exploration_probability, alpha, beta, lambda1, lambda2, rng);
-                }
-
-                if (unable) {
-                    continue;
-                }
-
-                bool feasible = true;
-                for (int e = 0; e < candidate_edges.size(); ++e) {
-                    int new_energy = add_energy(candidate_parameters[1], shrinked_edge_parameters[candidate_edges[e]][1]);
-                    if (new_energy > battery_capacity) {
-                        feasible = false;
-                        break;
-                    }
-                    candidate_parameters[0] += shrinked_edge_parameters[candidate_edges[e]][0];
-                    candidate_parameters[1] = new_energy;
-                }
-
-                if (!feasible) {
-                    continue;
-                }
-
-                if (check_strict_domination(candidate_parameters, best_parameters)) {
-                    best_nodes = std::move(candidate_nodes);
-                    best_edges = std::move(candidate_edges);
-                    best_parameters = std::move(candidate_parameters);
-                    improved = true;
-                }
-            }
-        }
-
-    }
-    if (check_strict_domination(best_parameters, current_parameters)) {
-        current_nodes = std::move(best_nodes);
-        current_edges = std::move(best_edges);
-        current_parameters = std::move(best_parameters);
-    }
-}
-
-void SVRPAntColony::vertex_reinsertion(deque<int> &current_nodes, deque<int> &current_edges, vector<int> &current_parameters,
-                                       vector<vector<double>> &pheromones, double &exploration_probability, double &alpha, double &beta,
-                                       double &lambda1, double &lambda2, mt19937 &rng) {
-    deque<int> best_nodes;
-    deque<int> best_edges;
-    vector<int> best_parameters(num_parameters, INT_MAX);
-
-    bool improved = true;
-
-    while (improved) {
-        improved = false;
-        // Node to reinsert
-        for (int v = 1; v < current_nodes.size() - 1; ++v) {
-
-            int vertex_to_insert = current_nodes[v];
-            int vertex_before = current_nodes[v - 1];
-            int vertex_after = current_nodes[v + 1];
-
-            vector<int> possible_edges;
-            for (int e: shrinked_graph.get_outgoing_edges(vertex_before)) {
-                if (shrinked_edge_nodes[e].second == vertex_after) {
-                    possible_edges.push_back(e);
-                }
-            }
-            if (possible_edges.empty()) {
-                continue;
-            }
-
-            int replacement_edge = bicriterion_ant_pick_edge(possible_edges, pheromones, exploration_probability, alpha, beta, lambda1, lambda2, rng);
-
-            // Reinsert after this position
-            for (int t = 1; t < current_nodes.size(); ++t) {
-                if (v == t) {
-                    continue;
-                }
-                int insertion_position = t;
-                if (t > v) {
-                    insertion_position--;
-                }
-                deque<int> candidate_nodes(current_nodes);
-                deque<int> candidate_edges(current_edges);
-                vector<int> candidate_parameters(num_parameters, 0);
-
-                // Bind the gap
-                candidate_edges[v - 1] = replacement_edge;
-                candidate_edges.erase(candidate_edges.begin() + v);
-                candidate_nodes.erase(candidate_nodes.begin() + v);
-
-                // Insert vertex
-                candidate_nodes.insert(candidate_nodes.begin() + insertion_position, vertex_to_insert);
-                // Remove binding edge
-                candidate_edges.erase(candidate_edges.begin() + insertion_position);
-
-                int bind_from = candidate_nodes[insertion_position - 1];
-                int bind_to = candidate_nodes[insertion_position + 1];
-
-                possible_edges.clear();
-                for (int e: shrinked_graph.get_outgoing_edges(vertex_to_insert)) {
-                    if (shrinked_edge_nodes[e].second == bind_to) {
-                        possible_edges.push_back(e);
-                    }
-                }
-                if (possible_edges.empty()) {
-                    continue;
-                }
-
-                candidate_edges.insert(candidate_edges.begin() + insertion_position, bicriterion_ant_pick_edge(possible_edges, pheromones, exploration_probability, alpha, beta, lambda1, lambda2, rng));
-
-                possible_edges.clear();
-                for (int e: shrinked_graph.get_outgoing_edges(bind_from)) {
-                    if (shrinked_edge_nodes[e].second == vertex_to_insert) {
-                        possible_edges.push_back(e);
-                    }
-                }
-                if (possible_edges.empty()) {
-                    continue;
-                }
-
-                candidate_edges.insert(candidate_edges.begin() + insertion_position, bicriterion_ant_pick_edge(possible_edges, pheromones, exploration_probability, alpha, beta, lambda1, lambda2, rng));
-
-                bool feasible = true;
-                for (int e = 0; e < candidate_edges.size(); ++e) {
-                    int new_energy = add_energy(candidate_parameters[1], shrinked_edge_parameters[candidate_edges[e]][1]);
-                    if (new_energy > battery_capacity) {
-                        feasible = false;
-                        break;
-                    }
-                    candidate_parameters[0] += shrinked_edge_parameters[candidate_edges[e]][0];
-                    candidate_parameters[1] = new_energy;
-                }
-
-                if (!feasible) {
-                    continue;
-                }
-
-                if (check_strict_domination(candidate_parameters, best_parameters)) {
-                    best_nodes = std::move(candidate_nodes);
-                    best_edges = std::move(candidate_edges);
-                    best_parameters = std::move(candidate_parameters);
-                    improved = true;
-                    //v = -1;
-                }
-            }
-        }
-    }
-    if (check_strict_domination(best_parameters, current_parameters)) {
-//        cout << "Destination exchange: (" << current_parameters[0] << ", " << current_parameters[1] << ")  to  (" << best_parameters[0] << ", " << best_parameters[1] << ")" << endl;
-        current_nodes = std::move(best_nodes);
-        current_edges = std::move(best_edges);
-        current_parameters = std::move(best_parameters);
-    }
 }
 
 int SVRPAntColony::bicriterion_ant_pick_edge(vector<int>& available_edges, vector<vector<double>>& pheromones, double& exploration_probability, double& alpha, double& beta, double& lambda1, double& lambda2, mt19937& rng) {
@@ -1898,7 +1432,6 @@ int SVRPAntColony::bicriterion_ant_pick_edge(vector<int>& available_edges, vecto
             }
         }
 
-
     }
         // Choose random prob
     else {
@@ -1920,148 +1453,128 @@ int SVRPAntColony::bicriterion_ant_pick_edge(vector<int>& available_edges, vecto
     return chosen_edge;
 }
 
-int SVRPAntColony::bicriterion_ant_pick_overhead(vector<pair<deque<int>, vector<int>>>& planned_routes, vector<vector<double>>& pheromones, double& exploration_probability, double& alpha, double& beta, double& lambda1, double& lambda2, mt19937& rng) {
-
-    int num_possible_edges = planned_routes.size();
-    if (num_possible_edges == 0) {
-        return -1;
-    }
-    vector<double> probs(num_possible_edges);
-
-    double sum = 0;
-    for (int e = 0; e < num_possible_edges; ++e) {
-//        probs[e] = pow(pow(pheromones[available_edges[e]][0], lambda1) * pow(pheromones[available_edges[e]][1], lambda2), alpha) * pow((pow(1.0/((double)shrinked_graph.get_edge_parameters(available_edges[e])[0]/max_parameter_values[0]), lambda1)
-//                                                                                                                                        * pow(1.0/((double)shrinked_graph.get_edge_parameters(available_edges[e])[1]/max_parameter_values[1]), lambda2)), beta);
-        // Calculate average pheromones
-        deque<int> current_edges = planned_routes[e].first;
-        vector<int> current_parameters = planned_routes[e].second;
-        vector<double> mean_pheromones(num_parameters, 0);
-        for (int edge: current_edges) {
-            for (int i = 0; i < num_parameters; ++i) {
-                mean_pheromones[i] += pheromones[edge][i];
-            }
-        }
-        for (int i = 0; i < num_parameters; ++i) {
-            mean_pheromones[i] /= current_edges.size();
-        }
-
-        probs[e] = pow(pow(mean_pheromones[0], lambda1) * pow(mean_pheromones[1], lambda2), alpha) * pow((pow(1.0/((double)current_parameters[0]/max_parameter_values[0]), lambda1) *
-                                                                                                          pow(1.0/((double)current_parameters[1]/max_parameter_values[1]), lambda2)), beta);
-        probs[e] = min(probs[e], 1000000.0);
-        sum += probs[e];
-    }
-    if (!isfinite(sum) || sum <= 0) {
-        uniform_int_distribution<int> route_distribution(0, num_possible_edges - 1);
-        return route_distribution(rng);
-    }
-    for (int e = 0; e < num_possible_edges; ++e) {
-        probs[e] /= sum;
-    }
-
-    std::uniform_real_distribution<double> unif(0.0, 1.0);
-
-    // Choose by probs
-    double strat = unif(rng);
-    int next_vertex = -1;
-    int chosen_edge = -1;
-    // Choose largest prob
-    if (strat > exploration_probability) {
-        double max_prob = -1;
-        for (int e = 0; e < num_possible_edges; ++e) {
-            if (probs[e] > max_prob) {
-                max_prob = probs[e];
-                chosen_edge = e;
-            }
-        }
-    }
-        // Choose random prob
-    else {
-        double chosen_prob = unif(rng);
-        double accumulated_prob = 0;
-        for (int e = 0; e < num_possible_edges; ++e) {
-            accumulated_prob += probs[e];
-            if (accumulated_prob >= chosen_prob) {
-                chosen_edge = e;
-                break;
-            }
-        }
-    }
-    if (chosen_edge == -1) {
-        chosen_edge = num_possible_edges - 1;
-    }
-    return chosen_edge;
-}
-
-
 int SVRPAntColony::add_energy(int& current_energy, int& added_energy) {
     return max(0, current_energy + added_energy);
 }
 
-void SVRPAntColony::print_out_route_coords(deque<int> &route) {
-    vector<pair<double, double>> node_coords;
-
-    ifstream coords_file;
-    coords_file.open("../../data/merged_berlin_nodes.csv");
-    string line;
-    getline(coords_file, line);
-
-    while (getline(coords_file, line, ',')) {
-        getline(coords_file, line, ',');
-        double latitude = stof(line);
-
-        getline(coords_file, line, '\n');
-        double longitude = stof(line);
-
-        node_coords.emplace_back(latitude, longitude);
+bool SVRPAntColony::validate_solution(const deque<int>& route_edges,
+                                      const vector<int>& objectives,
+                                      int& route_count,
+                                      string& reason) {
+    route_count = 0;
+    if (route_edges.empty() || objectives.size() < 2) {
+        reason = "empty route or objective vector";
+        return false;
     }
 
-    ofstream file;
-    string file_path = "../nn_route.csv";
-    file.open(file_path);
-    file << "latitude_1, longitude_1, latitude_2, longitude_2\n";
-    for (int i = 0; i < route.size() - 1; ++i) {
-        int start = route[i];
-        int end = route[i + 1];
-        file << node_coords[start].first << "," << node_coords[start].second << "," << node_coords[end].first << "," << node_coords[end].second << "\n";
+    vector<bool> visited(num_criticals, false);
+    visited[depot] = true;
+    int current_vertex = depot;
+    int route_energy = 0;
+    long total_distance = 0;
+    long total_energy = 0;
+
+    for (int edge: route_edges) {
+        if (edge < 0 || edge >= shrinked_graph.get_num_edges()) {
+            reason = "route contains an invalid edge id";
+            return false;
+        }
+        if (shrinked_edge_nodes[edge].first != current_vertex) {
+            reason = "route is not continuous";
+            return false;
+        }
+
+        total_distance += shrinked_edge_parameters[edge][0];
+        int added_energy = shrinked_edge_parameters[edge][1];
+        route_energy = add_energy(route_energy, added_energy);
+        if (route_energy > battery_capacity) {
+            reason = "route exceeds battery capacity";
+            return false;
+        }
+
+        if (count_pass_through_goals) {
+            for (int node: shrinked_graph.get_edge_nodes(edge)) {
+                if (node > depot && node < num_criticals) {
+                    visited[node] = true;
+                }
+            }
+        } else {
+            int endpoint = shrinked_edge_nodes[edge].second;
+            if (endpoint > depot && endpoint < num_criticals) {
+                visited[endpoint] = true;
+            }
+        }
+
+        current_vertex = shrinked_edge_nodes[edge].second;
+        if (current_vertex == depot) {
+            total_energy += route_energy;
+            route_energy = 0;
+            route_count += 1;
+        }
     }
 
-    file.close();
-
-    file.open("../goal_node_coords.csv");
-    file << "latitude,longitude,id\n";
-    for (int g = 0; g < num_criticals; ++g) {
-        file << node_coords[g].first << "," << node_coords[g].second << "," << g << "\n";
+    if (current_vertex != depot) {
+        reason = "route does not return to the depot";
+        return false;
     }
-    file.close();
+    if (route_count > max_vehicles) {
+        reason = "route uses more vehicles than allowed";
+        return false;
+    }
+    for (int goal = 1; goal < num_criticals; ++goal) {
+        if (!visited[goal]) {
+            reason = "route does not visit every goal";
+            return false;
+        }
+    }
+    if (total_distance != objectives[0] || total_energy != objectives[1]) {
+        reason = "reported objectives do not match the route";
+        return false;
+    }
+    return true;
 }
 
+int SVRPAntColony::mark_visited_goals_on_edge(int edge, vector<int>& goal_visited) {
+    int newly_visited = 0;
 
-// Use backward t-kPC-MLS from depot to compute energies (only minimum energy)
+    if (!count_pass_through_goals) {
+        int next_vertex = shrinked_edge_nodes[edge].second;
+        if (next_vertex != depot && goal_visited[next_vertex] == 0) {
+            newly_visited += 1;
+        }
+        goal_visited[next_vertex] += 1;
+        return newly_visited;
+    }
+
+    deque<int> edge_nodes = shrinked_graph.get_edge_nodes(edge);
+    for (int vertex: edge_nodes) {
+        if (vertex == depot || vertex >= num_criticals) {
+            continue;
+        }
+        if (goal_visited[vertex] == 0) {
+            newly_visited += 1;
+        }
+        goal_visited[vertex] += 1;
+    }
+
+    return newly_visited;
+}
+
 vector<vector<int>> SVRPAntColony::backward_t_kpc_mls(int source) {
     //kPC already computed
-    auto t1 = chrono::high_resolution_clock::now();
 
     vector<set<LabelPtr, soc_lex_compare>> closed_labels(num_cover_nodes);
     vector<set<LabelPtr, soc_lex_compare>> open_labels(num_cover_nodes);
     vector<set<vector<int>>> t_sets(num_cover_nodes);
     set<LabelPtr, soc_lex_compare> to_expand;
-    long num_labels = 0;
     auto source_label = make_shared<Label>(source, vector<int>({ 0, 0, battery_capacity}), nullptr, -1);
-    num_labels++;
 
     to_expand.insert(source_label);
     open_labels[cover_id[source]].insert(source_label);
 
-    int num_iters = 0;
-
     while (!to_expand.empty()){
         LabelPtr current_label = *to_expand.begin();
         to_expand.erase(to_expand.begin());
-
-//        if (num_iters % 100000 == 0){
-//            cout << to_expand.size() << endl;
-//        }
-        num_iters += 1;
 
         int current_node = current_label->node;
         vector<int> current_params = current_label->parameters;
@@ -2107,12 +1620,9 @@ vector<vector<int>> SVRPAntColony::backward_t_kpc_mls(int source) {
                     to_remove.pop();
                     to_expand.erase(rit);
                     other_labels.erase(rit);
-                    num_labels--;
                 }
 
-
                 auto new_label = make_shared<Label>(next_node, new_criteria, current_label, i);
-                num_labels++;
 
                 open_labels[cover_id[next_node]].insert(new_label);
                 to_expand.insert(new_label);
@@ -2126,12 +1636,6 @@ vector<vector<int>> SVRPAntColony::backward_t_kpc_mls(int source) {
             solution_bag[i] = (*closed_labels[i].begin())->parameters;
         }
     }
-
-    auto t2 = chrono::high_resolution_clock::now();
-
-    double duration = chrono::duration_cast<chrono::nanoseconds>( t2 - t1 ).count();
-    duration *= 1e-9;
-//    cout << "Backward energy query duration: " << duration << endl;
 
     return solution_bag;
 }

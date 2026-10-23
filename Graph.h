@@ -9,6 +9,7 @@ using namespace std;
 #ifndef ACO_VRP_GRAPH_H
 #define ACO_VRP_GRAPH_H
 
+// Road graph with internal IDs: depot 0, then customers, then transit vertices.
 class Graph {
 private:
     int num_nodes;
@@ -21,8 +22,9 @@ private:
     vector<vector<int>> outgoing_edges;
     vector<vector<int>> incoming_edges;
 
-    vector<int> restructure_ids;
-    vector<int> id_to_goal;
+    vector<int> restructure_ids; // Original ID -> internal ID.
+    vector<int> id_to_goal;      // Internal terminal ID -> original ID.
+    vector<int> original_ids;    // Internal ID -> original ID, including transit vertices.
 
 
 public:
@@ -40,6 +42,7 @@ public:
 
     void augment_graph(set<int>& goals);
     int get_restructure_id(int node);
+    int get_original_id(int internal_id);
 };
 
 

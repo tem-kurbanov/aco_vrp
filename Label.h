@@ -16,6 +16,7 @@ struct Label{
     int node;
     vector<int> parameters;
     LabelPtr parent;
+    // Cover search: index within a cover-arc bundle; route planner: edge ID.
     int used_edge;
 
     Label(int n, vector<int> params, LabelPtr p, int edge) : node(n), parameters(std::move(params)), parent(std::move(p)), used_edge(edge) {}
@@ -36,6 +37,7 @@ struct lex_compare{
 };
 
 struct soc_lex_compare{
+    // Backward energy summaries minimize required/net charge, maximize ending charge.
     bool operator() (const LabelPtr& lhs, const LabelPtr& rhs) const {
         for (int i = 0; i < (int)lhs->parameters.size() - 1; ++i) {
             if (lhs->parameters[i] < rhs->parameters[i])
