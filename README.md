@@ -26,10 +26,9 @@ compare planned multi-arc moves with direct moves. These options expose the
 tradeoff between the planning alternatives retained and the work needed to
 search them; benchmark findings are withheld until they can be released.
 
-See [architecture](docs/architecture.md) for the observed code flow and
-[provenance](docs/provenance.md) for the experiment-source snapshot and the
-limits of historical reproducibility. This repository contains the ACO
-solvers; the separate ILP implementation is not included.
+See [architecture](docs/architecture.md) for the observed code flow. This
+repository contains the ACO solvers; the separate ILP implementation is not
+included.
 
 ## Build and test
 
@@ -90,9 +89,7 @@ The output does not include full routes or a source-revision identifier.
 and cost family (`c` for correlated, `u` for uncorrelated). They were generated
 using [art_city](https://github.com/tem-kurbanov/art_city). The input manifest
 records each seed, cost family, graph size, and SHA-256 checksum, together with
-a compatible public generator revision. The original checkout was not
-recorded; reconstruction evidence and the CSV export difference are described
-in [provenance](docs/provenance.md).
+a compatible public generator revision.
 
 ```sh
 python3 tools/verify_instances.py
@@ -108,55 +105,6 @@ journal experiments. Each manifest contains ten scenarios and can be passed
 to `--scenario-manifest`. The scenario generator is
 `tools/generate_scenario_manifest.py`; the submission script uses it with a
 fixed seed.
-
-## SLURM experiments
-
-The submission scripts remain Bash scripts. They resolve project files from
-their own directory, so they can be invoked from another working directory.
-They require `sbatch` and `srun` on the cluster; journal submission also uses
-Python for scenario generation. Configuration values are at the top of each
-script, with environment overrides for paths, resources, and seeds.
-
-- `submit_journal_experiments.sh`: 60 graph/goal bundles, each with 17 sequential
-  configurations: three VRP baselines, twelve SVRP sensitivity configurations,
-  and two planned-path ablations. Each configuration uses ten scenarios and
-  three replicates, producing 30 JSONL records.
-- `submit_vrp_experiments.sh`: the earlier paired-solver sweep, producing the
-  legacy text format consumed by `tools/analyze_vrp_outputs.py`.
-
-```sh
-# Prepare and check generated jobs without calling sbatch.
-DRY_RUN=true bash submit_journal_experiments.sh
-DRY_RUN=true bash submit_vrp_experiments.sh
-
-# Adapt the partition to your cluster; an empty value uses its default.
-PARTITION=your_partition bash submit_journal_experiments.sh
-```
-
-Dry runs create output directories, temporary job files, and journal scenario
-manifests, but do not run the solver or submit jobs. Journal manifests are
-regenerated from the configured scenario seed. Use separate `SCENARIO_ROOT`
-and `RESULT_ROOT` directories for a different experiment configuration.
-The journal script skips a result only when its JSON records cover every
-expected scenario/replicate and match the graph, parameters, and derived ACO
-seeds. Incomplete or incompatible results are rerun. Use `SKIP_COMPLETE=false`
-when intentionally rerunning all existing results.
-
-Raw outputs, cluster logs, temporary files, the local `cluster_code/` backup,
-manuscript sources, and manuscript archives are ignored by Git. No jobs are submitted by the test
-suite: it exercises generated jobs using local SLURM stand-ins.
-
-Journal jobs write a provenance sidecar alongside their bundle logs, recording
-the current source and binary hashes, available build settings, and runtime
-environment. To capture the same metadata for a manual run:
-
-```sh
-python3 tools/capture_provenance.py --binary build/aco_vrp \
-  --output build/run-provenance.json
-```
-
-This captures the current state; it does not recover the historical compiler
-or prove that a binary was built from the source files currently on disk.
 
 ## Analyze structured results
 
